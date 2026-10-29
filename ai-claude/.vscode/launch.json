@@ -40,6 +40,24 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Race: 60 items, heuristics only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": ["demo", "--n", "60", "--algos", "hilbert", "greedy", "two_opt", "balas_simonetti", "vnd"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Trade-off: speed vs quality (satisficing)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": ["tradeoff"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Plots: redraw from saved results",
             "type": "debugpy",
             "request": "launch",

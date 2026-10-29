@@ -95,6 +95,8 @@ NAME = "Held-Karp DP"
 TAGLINE = "plans the whole route before leaving"
 TIME_COMPLEXITY = "Θ(n²·2ⁿ)"     # Θ(n²·2ⁿ)
 MEMORY_COMPLEXITY = "Θ(n·2ⁿ)"
+MAX_N = 20
+GROWTH_LABEL = "n$^2$·2$^n$"
 
 INF = math.inf
 

@@ -36,6 +36,8 @@ NAME = "Brute force"
 TAGLINE = "tries every possible order"
 TIME_COMPLEXITY = "Θ(n·n!)"
 MEMORY_COMPLEXITY = "Θ(n)"
+MAX_N = 10
+GROWTH_LABEL = "n·n!"
 
 
 def growth(n: float) -> float:

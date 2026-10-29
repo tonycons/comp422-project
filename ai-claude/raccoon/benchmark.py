@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from . import config
-from .algorithms import ALGORITHMS, MAIN_ALGORITHMS, plain_text
+from .algorithms import ALGORITHMS, BENCHMARK_ALGORITHMS, plain_text
 from .generator import benchmark_seed, generate_instance
 from .problem import Instance, Solution
 
@@ -81,7 +81,7 @@ def _progress(label: str, n: int, done: int, total: int, avg: Optional[float]) -
     sys.stdout.flush()
 
 
-def run_benchmark(keys: Iterable[str] = MAIN_ALGORITHMS, quick: bool = False) -> Dict[str, Path]:
+def run_benchmark(keys: Iterable[str] = BENCHMARK_ALGORITHMS, quick: bool = False) -> Dict[str, Path]:
     """Benchmark the given algorithms and write their CSV files. Returns {key: csv path}."""
     sizes_table = config.QUICK_BENCHMARK_SIZES if quick else config.BENCHMARK_SIZES
     min_seconds = config.QUICK_MIN_TIMED_SECONDS if quick else config.MIN_TIMED_SECONDS
