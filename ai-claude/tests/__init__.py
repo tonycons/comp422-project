@@ -1,0 +1,1 @@
+# AI-GENERATED (Claude, 2026-10-29) - see AI_CONTRIBUTIONS.md
