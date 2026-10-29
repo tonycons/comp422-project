@@ -107,3 +107,105 @@ so read the relevant parts yourselves before citing them in the report.
 
 The written report summary, the slides, and the oral presentation. The group still needs to
 understand and explain every part of this code, as the spec says.
+
+---
+
+## Session 2 - 2026-10-29 (same day, same branch)
+
+| | |
+|---|---|
+| **AI tool** | Claude (Anthropic), model Claude Opus 5.5, via claude.ai |
+| **Prompted by** | George Rule |
+| **Git branch** | `claude/raccoon-algorithms` (second commit, marked `Co-Authored-By: Claude`) |
+
+**Prompts (verbatim):**
+> Are you sure that Held-Karp is slower and not just implemented suboptimally with recursion or something
+
+> Consider several different algorithms and optimizations you could try that would run faster than
+> greedy and be a clever soln
+
+> Expand the project to show that same animation you made but with several options that balance
+> speed and better food that are all well documented algorithms and try to find the one that is the
+> most satisficing
+
+> In the gif show the initial setup run time visually as well before the dot starts to travel
+
+### What was added
+
+| File | What it is |
+|---|---|
+| `raccoon/algorithms/hilbert.py` | Hilbert space-filling-curve order, Θ(n log n) |
+| `raccoon/algorithms/greedy_kd.py` | Greedy with one k-d tree per food type: **identical routes** to `greedy.py`, O(n log² n) expected |
+| `raccoon/algorithms/two_opt.py` | Greedy + 2-opt local search with O(1) move evaluation for the spoilage cost |
+| `raccoon/algorithms/balas_simonetti.py` | Greedy + Balas–Simonetti restricted DP (linear in n for a fixed window k) |
+| `raccoon/algorithms/vnd.py` | Greedy + Variable Neighborhood Descent (alternates 2-opt and the DP) |
+| `raccoon/tradeoff.py` | Speed-vs-quality study and the satisficing verdict |
+| `tests/test_more_algorithms.py` | 9 more tests (k-d tree = linear scan, greedy_kd = greedy, DP = brute force, ...) |
+| `raccoon/visuals/animate.py` | Rewritten: any number of panels, plus the **planning phase** (CPU-time bars) |
+| `raccoon/visuals/plots.py` | New chart: `plot_tradeoff_satisficing.png`; comparison chart covers all algorithms |
+| `config.py`, `theme.py`, `race.py`, `benchmark.py`, `main.py`, `README.md`, `.vscode/launch.json` | Updated for the above |
+
+### Answer to "is Held-Karp just implemented badly?"
+No. It is iterative (no recursion) and fills each of the 2ⁿ·n table cells once. Its Θ(n²·2ⁿ) cost comes
+from the number of subsets, and the measured times match that curve (R² ≈ 0.98, ×2.36 per extra
+item from n = 15 to 16 vs. ×2.28 predicted). The problem is NP-hard, so every known exact algorithm
+takes exponential time. Anything faster than Greedy has to be a heuristic.
+
+### Decisions the AI made that the group should review
+
+1. **Which algorithms.** Chosen because each has a well-known published source and they cover the
+   whole speed/quality range. All sources were checked to exist with the stated title, venue,
+   pages and DOI on 2026-10-29. **Nobody has read them for this project yet.**
+2. **Adapting TSP methods to our cost.** Our objective is a weighted sum of waiting times, not a
+   tour length, so 2-opt cannot use the usual "two edges change" shortcut. It uses running totals
+   (duration, weight, cost of a stretch) instead, the technique used for the Minimum Latency Problem.
+   The Balas–Simonetti DP uses the same "charge each walk to the uneaten food" trick as Held-Karp.
+3. **Simplification:** Balas & Simonetti's own heuristic contracts arcs between passes. Ours just
+   re-runs the DP on the improved route.
+4. **Parameters** (`config.py`): 2-opt stretch limit L = 50, DP window k = 6, VND uses L = 50 and k = 5,
+   at most 20 passes. Chosen from a small tuning run (k = 8 is near-optimal on small maps but about
+   9× slower at n = 1000).
+5. **Satisficing rule** (`config.py`): average extra spoilage ≤ 3% compared with the best known route,
+   at **every** size (12, 100, 1000), and ≤ 1 s per map at n = 1000. Recommend the **fastest**
+   algorithm that meets both. If none does, relax the 3% bar one point at a time (Simon's aspiration
+   adaptation). These numbers are a choice, so own them or change them.
+6. **Planning-phase display:** bar length = CPU time on a shared linear scale (the slowest algorithm
+   fills 3.5 s on screen). `PLANNING_SCALE = "log"` in `theme.py` makes the tiny bars visible instead.
+
+### Result on the AI's test machine (re-run `python main.py tradeoff` on yours)
+
+- No algorithm met the 3% bar at every size. With the bar relaxed to **4%**, the most satisficing is
+  **Greedy + VND (2-opt ⇄ DP)**: 3.8% extra at n = 12, ~0% at n = 100 and n = 1000 (it found the best
+  known route), about 0.6 s at n = 1000.
+- Runner-up: **Greedy + 2-opt**. It would qualify at a 6.4% bar and is about 2.3× faster
+  (0.26 s at n = 1000).
+- Greedy with k-d trees produces exactly Greedy's routes about 5× faster at n = 1000 (31 ms vs. 153 ms).
+  At n = 12 it is slower, because building the trees costs more than it saves.
+- The Hilbert curve is the fastest by far but lets about 40% more calories spoil, because it ignores food.
+- Runtime fits (full benchmark, about 6 minutes): Held-Karp R² 0.99, Greedy k-d 0.98, Greedy 0.97,
+  Hilbert 0.96, 2-opt 0.94. The DP-based local searches are noisier (VND 0.86, Balas–Simonetti 0.83)
+  because the number of improvement passes changes from map to map. Report that honestly rather than
+  as a clean theoretical curve.
+- **For the spec's "clever must asymptotically beat straightforward" rule,** Greedy (Θ(n²)) vs.
+  Greedy with k-d trees (O(n log² n) expected) is a clean pair: same output, provably faster on
+  average. Brute force vs. Held-Karp is the other clean pair.
+
+### New sources mentioned in the code (verified to exist; read before citing)
+
+- L. K. Platzman, J. J. Bartholdi III. "Spacefilling curves and the planar travelling salesman
+  problem." *J. ACM* 36(4):719-737, 1989.
+- J. L. Bentley. "Multidimensional binary search trees used for associative searching."
+  *Communications of the ACM* 18(9):509-517, 1975. doi:10.1145/361002.361007
+- J. L. Bentley. "Fast algorithms for geometric traveling salesman problems."
+  *ORSA Journal on Computing* 4(4):387-411, 1992. doi:10.1287/ijoc.4.4.387
+- G. A. Croes. "A method for solving traveling-salesman problems."
+  *Operations Research* 6(6):791-812, 1958. doi:10.1287/opre.6.6.791
+- E. Balas, N. Simonetti. "Linear time dynamic-programming algorithms for new classes of restricted
+  TSPs: a computational study." *INFORMS J. Computing* 13(1):56-75, 2001. doi:10.1287/ijoc.13.1.56.9748
+- N. Mladenović, P. Hansen. "Variable neighborhood search." *Computers & Operations Research*
+  24(11):1097-1100, 1997. doi:10.1016/S0305-0548(97)00031-2
+- M. M. Silva, A. Subramanian, T. Vidal, L. S. Ochi. "A simple and effective metaheuristic for the
+  Minimum Latency Problem." *European J. Operational Research* 221(3):513-520, 2012.
+  doi:10.1016/j.ejor.2012.03.044
+- H. A. Simon. "Rational choice and the structure of the environment." *Psychological Review*
+  63(2):129-138, 1956. doi:10.1037/h0042769

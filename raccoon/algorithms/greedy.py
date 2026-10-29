@@ -65,6 +65,8 @@ NAME = "Greedy"
 TAGLINE = "picks the best-looking next meal"
 TIME_COMPLEXITY = "Θ(n²)"      # Θ(n²)
 MEMORY_COMPLEXITY = "Θ(n)"
+MAX_N = None
+GROWTH_LABEL = "n$^2$"
 
 
 def growth(n: float) -> float:

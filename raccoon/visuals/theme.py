@@ -33,10 +33,23 @@ SPOILED = "#d03b3b"
 ROTTEN_FOOD = "#a89f91"     # what an uneaten spoiled item turns into
 
 # Each algorithm keeps the same color in every chart and in the animation.
+# (Order checked with a colorblind-safety validator for the default race lineup;
+#  names are always shown next to the colors, so color is never the only cue.)
 ALGORITHM_COLORS = {
-    "greedy": "#eb6834",        # orange
-    "held_karp": "#2a78d6",     # blue
-    "brute_force": "#1baf7a",   # aqua
+    "hilbert": "#6250d6",          # violet
+    "greedy": "#eb6834",           # orange
+    "greedy_kd": "#eda100",        # yellow
+    "two_opt": "#1baf7a",          # aqua
+    "balas_simonetti": "#e87ba4",  # pink
+    "vnd": "#008300",              # green
+    "held_karp": "#2a78d6",        # blue
+    "brute_force": "#e34948",      # red
+}
+
+# Marker shape per algorithm (a second cue besides color in the trade-off chart)
+ALGORITHM_MARKERS = {
+    "hilbert": "v", "greedy": "o", "greedy_kd": "P", "two_opt": "s",
+    "balas_simonetti": "D", "vnd": "*", "held_karp": "^", "brute_force": "X",
 }
 
 # -----------------------------------------------------------------------------
@@ -69,12 +82,16 @@ SPRITE_ZOOM = 0.45           # scale factor for sprite PNGs (tune to your image 
 # -----------------------------------------------------------------------------
 # Animation
 # -----------------------------------------------------------------------------
-ANIMATION_SECONDS = 14       # how long the race takes on screen
+PLANNING_SECONDS = 3.5       # phase 1: the SLOWEST algorithm's compute time fills this much screen time
+PLANNING_HOLD_SECONDS = 0.8  # pause after planning, before the raccoons start walking
+PLANNING_SCALE = "linear"    # "linear" (honest: bar length = CPU time) or "log" (small times visible)
+ANIMATION_SECONDS = 14       # phase 2: how long the walk takes on screen
 FPS = 30                     # frames per second in the live window
 HOLD_SECONDS = 2.5           # pause on the final frame (saved GIFs)
 GIF_FPS = 15                 # GIF frame rate (lower = smaller file)
 GIF_DPI = 72                 # GIF resolution (higher = sharper, bigger file)
-FIGURE_SIZE = (14, 10)       # inches (width, height) of the race window
+FIGURE_SIZE = (14, 10)       # inches (width, height) of the race window with 1-3 algorithms
+FIGURE_SIZE_MANY = (17, 10)  # ... and with 4 or more algorithms
 
 SHOW_TRAIL = True            # draw the path walked so far
 SHOW_PLANNED_ROUTE = True    # Held-Karp: faint dashed line of the full plan
