@@ -1,0 +1,5 @@
+# AI-GENERATED (Claude, 2026-10-29) - see AI_CONTRIBUTIONS.md
+# Keep script line endings correct no matter who commits them.
+*.bat text eol=crlf
+*.sh  text eol=lf
+*.py  text eol=lf

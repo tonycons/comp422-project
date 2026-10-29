@@ -1,0 +1,5 @@
+# AI-GENERATED (Claude, 2026-10-29) - see AI_CONTRIBUTIONS.md
+# The algorithms themselves use only the Python standard library.
+# These two are only for the charts and the animation.
+numpy>=1.21
+matplotlib>=3.5

@@ -1,0 +1,38 @@
+// AI-GENERATED (Claude, 2026-10-29) - see AI_CONTRIBUTIONS.md
+// Terminal > Run Task...   (run "Setup" once after cloning)
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup: create .venv + install requirements",
+            "type": "shell",
+            "windows": {
+                "command": "if (!(Test-Path .venv\\Scripts\\python.exe)) { if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv .venv } else { python -m venv .venv } }; .venv\\Scripts\\python.exe -m pip install -r requirements.txt"
+            },
+            "linux": {
+                "command": "[ -x .venv/bin/python ] || python3 -m venv .venv; .venv/bin/python -m pip install -r requirements.txt"
+            },
+            "osx": {
+                "command": "[ -x .venv/bin/python ] || python3 -m venv .venv; .venv/bin/python -m pip install -r requirements.txt"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run: tests",
+            "type": "shell",
+            "windows": { "command": ".venv\\Scripts\\python.exe main.py test" },
+            "linux": { "command": ".venv/bin/python main.py test" },
+            "osx": { "command": ".venv/bin/python main.py test" },
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run: quick benchmark + plots",
+            "type": "shell",
+            "windows": { "command": ".venv\\Scripts\\python.exe main.py benchmark --quick" },
+            "linux": { "command": ".venv/bin/python main.py benchmark --quick" },
+            "osx": { "command": ".venv/bin/python main.py benchmark --quick" },
+            "problemMatcher": []
+        }
+    ]
+}
