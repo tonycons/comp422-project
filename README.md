@@ -25,4 +25,63 @@ We will implement two solution algorithms.
 
 
 ## Viewing the Solutions
-## *Implementation in progress*
+
+> *This section was written by Claude (AI). Everything the AI did is listed in
+> [AI_CONTRIBUTIONS.md](AI_CONTRIBUTIONS.md).*
+
+**Windows:** double-click **`run.bat`**.  **macOS / Linux:** run **`./run.sh`**.
+
+The first run creates a private Python environment (`.venv`) and installs numpy and
+matplotlib into it (needs Python 3.9+ and internet once). Then a menu opens:
+
+```
+  1) Watch the race: Greedy vs Held-Karp (window)
+  2) Save the race as results/race.gif
+  3) Quick benchmark + plots   (about 15 seconds)
+  4) Full benchmark + plots    (about 2 minutes)
+  5) Re-draw plots from saved results
+  6) Run correctness tests
+```
+
+Or call commands directly (`run.bat <command>` on Windows, `./run.sh <command>` elsewhere):
+
+| Command | What it does |
+|---|---|
+| `demo` | Live race window. Keys: SPACE pause, R restart, N new map, ←/→ step |
+| `demo --n 12 --seed 3` | Race on a specific map (Held-Karp gets slow above n ≈ 16) |
+| `demo --save results/race.gif --snapshot results/race_final.png` | Save the animation and a still image |
+| `benchmark` / `benchmark --quick` | CPU-time benchmark (10 random instances per size) + all plots |
+| `plots` | Re-draw the plots from `results/*.csv` without re-running |
+| `test` | Correctness tests (Held-Karp is checked against brute force) |
+
+Output goes to `results/`: `runtime_*.csv`, `plot_runtime_greedy.png`,
+`plot_runtime_held_karp.png` (+ `_log`), `plot_quality_greedy_vs_optimal.png`, `plot_comparison.png`.
+
+### Working on it in VS Code
+
+1. **File → Open Folder…** and pick this folder. Accept the **Python** extension recommendation.
+2. **Terminal → Run Task… → "Setup: create .venv + install requirements"** (once).
+3. **Ctrl+Shift+P → "Python: Select Interpreter"** → choose the `.venv` one.
+4. **Run and Debug** (Ctrl+Shift+D): pick *Race*, *Benchmark*, *Plots* or *Tests* and press **F5**.
+   Tests also appear in the **Testing** (beaker) panel.
+
+### Where things are
+
+```
+main.py                     start here (menu + commands)
+raccoon/config.py           ALL the numbers: map, food types, greedy formula, benchmark sizes
+raccoon/problem.py          the rules: freshness, scoring a route
+raccoon/algorithms/
+    greedy.py               straightforward algorithm  Θ(n²)       (pseudocode in the docstring)
+    held_karp.py            clever algorithm           Θ(n²·2ⁿ)    (pseudocode + why it is correct)
+    brute_force.py          checker only               Θ(n·n!)
+raccoon/benchmark.py        CPU timing -> results/*.csv
+raccoon/visuals/theme.py    ALL the looks: colors, shapes, sizes, animation speed
+raccoon/visuals/animate.py  the race animation
+raccoon/visuals/plots.py    the benchmark charts
+assets/sprites/             drop PNGs here to replace shapes with pictures
+tests/                      unit tests
+```
+
+The algorithm files have `[L1]`, `[L2]`… tags in the code that match the numbered pseudocode
+lines, for the running-time analysis.
