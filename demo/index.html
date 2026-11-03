@@ -1,0 +1,191 @@
+<!doctype html>
+<!--
+  AI-GENERATED FILE - written by Claude (Anthropic AI), 2026-11-03,
+  at the request of tonycons. See ../AI_CONTRIBUTIONS.md for the full log.
+  Human edits: please tag changed lines with an HTML comment  [EDIT: your name]
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>The Greedy Raccoon: Greedy vs. Greedy + 2-opt</title>
+    <meta name="description" content="COMP 422 algorithms project: a raccoon racing to eat food before it spoils. Watch a greedy algorithm race a 2-opt local search on the same map." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%233d3a36'/></svg>" />
+  </head>
+  <body>
+    <header class="page-header">
+      <p class="eyebrow">COMP 422 · Algorithms project</p>
+      <h1>The Greedy Raccoon</h1>
+      <p class="lede">
+        A raccoon leaves its den to eat every piece of food on a 100&nbsp;m × 100&nbsp;m map. Food loses calories every
+        second it waits, and spoiled food makes the raccoon sick (negative calories). <strong>Which order should it eat
+        in?</strong> Two algorithms race on the same map: the straightforward <span class="algo-key" data-algo="greedy">Greedy</span>
+        and the clever <span class="algo-key" data-algo="two_opt">Greedy + 2-opt</span>.
+      </p>
+    </header>
+
+    <main>
+      <form class="controls" id="controls" aria-label="Race settings">
+        <div class="control">
+          <label for="n-range">Food items</label>
+          <div class="control-row">
+            <input id="n-range" type="range" min="2" max="300" step="1" aria-describedby="n-help" />
+            <input id="n-input" type="number" min="2" max="2000" step="1" inputmode="numeric" aria-label="Food items (exact number)" />
+          </div>
+          <span id="n-help" class="help">Type up to 2,000 in the box</span>
+        </div>
+        <div class="control">
+          <label for="seed-input">Map seed</label>
+          <div class="control-row">
+            <input id="seed-input" type="number" min="0" max="999999" step="1" inputmode="numeric" />
+            <button type="button" id="new-map" class="btn">New random map</button>
+          </div>
+          <span class="help">Same seed + size = same map</span>
+        </div>
+        <div class="control playback" role="group" aria-label="Playback">
+          <span class="label">Playback</span>
+          <div class="control-row">
+            <button type="button" id="play" class="btn btn-primary" aria-pressed="true">Pause</button>
+            <button type="button" id="restart" class="btn">Replay planning</button>
+            <label class="visually-hidden" for="speed">Playback speed</label>
+            <select id="speed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </div>
+          <span class="help">Space = play/pause</span>
+        </div>
+      </form>
+
+      <ul class="food-legend" id="food-legend" aria-label="Food types"></ul>
+
+      <section class="race" aria-label="The race">
+        <article class="panel" id="panel-greedy" data-algo="greedy"></article>
+        <article class="panel" id="panel-two_opt" data-algo="two_opt"></article>
+      </section>
+
+      <div class="scrubber">
+        <span class="phase" id="phase" aria-live="polite">Planning</span>
+        <input id="time" type="range" min="0" max="1000" step="1" value="0" aria-label="Time since leaving the den" />
+        <output id="time-out" for="time">0 s</output>
+      </div>
+
+      <section class="card" aria-labelledby="timeline-title">
+        <div class="card-head">
+          <h2 id="timeline-title">Calories banked over time</h2>
+          <ul class="legend" id="timeline-legend" aria-label="Legend"></ul>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="timeline" tabindex="0" role="img"
+                  aria-label="Step chart of calories banked over time for each algorithm. Use left and right arrow keys to step through meals; values are also in the results table below."></canvas>
+          <div class="tooltip" id="tooltip" role="status" hidden></div>
+        </div>
+        <p class="help">Each step up is a meal. A step down is spoiled food. Hover, or focus the chart and use ← →, to read exact values.</p>
+      </section>
+
+      <section class="card" aria-labelledby="results-title">
+        <h2 id="results-title">Results on this map</h2>
+        <p class="summary" id="summary" aria-live="polite"></p>
+        <div class="table-scroll">
+          <table class="results" id="results"></table>
+        </div>
+        <details id="route-details">
+          <summary>Show both routes, meal by meal</summary>
+          <div class="table-scroll tall"><table class="routes" id="routes"></table></div>
+        </details>
+      </section>
+
+      <section class="about" aria-labelledby="about-title">
+        <h2 id="about-title">How it works</h2>
+
+        <div class="card prose">
+          <h3>Scoring</h3>
+          <p>Each food type has a calorie value and a shelf life. Freshness drops in a straight line from 1 (fresh) to 0
+            (spoiled) over that shelf life, and eating an item at time <var>t</var> is worth</p>
+          <p class="formula">score(<var>t</var>) = calories × (1 − <var>t</var> / shelf&nbsp;life) = calories − <var>w</var>·<var>t</var>,
+            &nbsp; where <var>w</var> = calories / shelf&nbsp;life</p>
+          <p>So the total score is <em>(all calories on the map) − Σ <var>w<sub>i</sub></var>·<var>t<sub>i</sub></var></em>.
+            The first part is the same for every route, so maximizing calories is the same as minimizing the
+            <strong>weighted sum of arrival times</strong>, which makes this a weighted Traveling Repairman problem.
+            The raccoon walks 1&nbsp;m/s in straight lines and eats instantly.</p>
+        </div>
+
+        <div class="algo-cards">
+          <article class="card prose">
+            <h3><span class="algo-key" data-algo="greedy">Greedy</span> · straightforward</h3>
+            <p>Standing where it is, the raccoon scores every uneaten item and walks to the most attractive one, then
+              repeats. Attractiveness is Smith's ratio rule: <em>calories lost per second of waiting ÷ seconds of
+              walking to it</em>. It never looks more than one step ahead.</p>
+<pre><code>GREEDY-RACCOON(items, den, speed)
+ 1  here ← den;  clock ← 0
+ 2  remaining ← all n items;  route ← empty
+ 3  while remaining is not empty
+ 4      best ← NIL;  best_value ← −∞
+ 5      for each item j in remaining
+ 6          travel ← distance(here, j) / speed
+ 7          value  ← w_j / travel
+ 8          if value > best_value
+ 9              best ← j;  best_value ← value
+10      walk to best;  clock ← clock + travel
+11      remove best from remaining;  append to route
+12  return route</code></pre>
+            <dl class="complexity">
+              <div><dt>Time</dt><dd>Θ(n²): lines 6–9 run n + (n−1) + … + 1 times</dd></div>
+              <div><dt>Memory</dt><dd>Θ(n)</dd></div>
+            </dl>
+          </article>
+
+          <article class="card prose">
+            <h3><span class="algo-key" data-algo="two_opt">Greedy + 2-opt</span> · clever</h3>
+            <p><strong>Step 1:</strong> build exactly Greedy's route, but faster. All items of one food type share the
+              same <var>w</var>, so the best fish is just the <em>nearest</em> fish. One k-d tree per food type answers
+              "nearest uneaten fish?" in O(log n).
+              <strong>Step 2:</strong> repeatedly pick a stretch of the route and walk it backwards when that loses fewer
+              calories. Running totals of the stretch's walking time, weight and internal cost make each check O(1).</p>
+<pre><code>TWO-OPT-RACCOON(items, den, L, P)
+ 1  route ← GREEDY-KD(items, den)
+ 2  repeat at most P times
+ 3      improved ← false
+ 4      for i ← 1 to n
+ 5          for j ← i+1 to min(n, i+L−1)
+ 6              Δ ← change in spoilage if route[i..j]
+                    is reversed                  ▹ O(1)
+ 7              if Δ &lt; 0
+ 8                  reverse route[i..j]           ▹ Θ(n)
+ 9                  improved ← true
+10      if not improved: stop
+11  return route</code></pre>
+            <dl class="complexity">
+              <div><dt>Time</dt><dd>O(n log² n + P·n·L + M·n) expected, with L = 50 and P = 20 fixed and
+                M = flips accepted. On random maps M grows like 0.3·n, so in practice this is about n², the
+                same order as Greedy. 2-opt's advantage is the score, not asymptotic speed.</dd></div>
+              <div><dt>Memory</dt><dd>Θ(n)</dd></div>
+            </dl>
+          </article>
+        </div>
+
+        <div class="card prose small">
+          <h3>About this page</h3>
+          <p>The algorithms are a TypeScript port of the group's Python implementation (<code>ai-claude/raccoon/</code>).
+            Automated tests check that both versions produce identical routes. Timings are measured in your browser
+            (wall-clock, averaged over repeated runs), so they differ from the Python benchmark numbers. Maps here use a
+            different random number generator than Python, so a seed on this page is not the same map as that seed in
+            <code>python main.py demo</code>.</p>
+          <p>References (verify before citing): W. E. Smith, <em>Naval Research Logistics Quarterly</em> 3, 1956 (ratio
+            rule) · J. L. Bentley, <em>CACM</em> 18(9), 1975 (k-d trees) · G. A. Croes, <em>Operations Research</em>
+            6(6), 1958 (2-opt) · Silva et al., <em>EJOR</em> 221(3), 2012 (O(1) move evaluation for minimum latency).</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      Anthony Constantinescu, George Rule, Josh Burick, Lucas Sanderson · COMP 422.
+      Site code generated with AI assistance (Claude); see <code>AI_CONTRIBUTIONS.md</code>.
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -112,6 +112,7 @@ raccoon/visuals/animate.py    the race animation
 raccoon/visuals/plots.py      the charts
 assets/sprites/               drop PNGs here to replace shapes with pictures
 tests/                        unit tests
+demo/                         web version (TypeScript): Greedy vs. Greedy + 2-opt, see demo/README.md
 ```
 
 The algorithm files have `[L1]`, `[L2]`… tags in the code that match the numbered pseudocode

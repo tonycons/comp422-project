@@ -209,3 +209,58 @@ takes exponential time. Anything faster than Greedy has to be a heuristic.
   doi:10.1016/j.ejor.2012.03.044
 - H. A. Simon. "Rational choice and the structure of the environment." *Psychological Review*
   63(2):129-138, 1956. doi:10.1037/h0042769
+
+## Session 3 - 2026-11-03: web demo (`demo/`)
+
+| | |
+|---|---|
+| **AI tool** | Claude (Anthropic), model Claude Opus 5.5, via Claude Code in VS Code |
+| **Prompted by** | git user `tonycons` (fill in the group member's name) |
+| **Git branch** | not committed by the AI; everything new is under `demo/` plus this log entry and one README line |
+
+**Prompts (verbatim):**
+> In this project, under the ai-claude subfolder, is an implementation of some algorithms for solving a
+> puzzle (see README for description). I'd like you to turn this into a website rather than a CLI program,
+> but these were written in Python. Is a total rewrite in typescript the way to go, or a flask server that
+> preserves the Python logic, or something else? Let me know what you would prefer to go with before
+> implementing anything
+
+> My goal is to host the site on my Cloudflare pages. No preference between plain typescript and React,
+> unless there is sufficient complexity that calls for React. Now that I think about it, I want to leave
+> out held-karp. I only need two algorithms to be showcased for the assignment, a straightforward and
+> clever algorithm. I'd choose the straightforward as the naive "Greedy" algorithm, and the clever as the
+> Hilbert curve algorithm (which is significantly more accurate and has better time complexity). If this
+> is a good choice, then is a re-implementation in typescript better than the complications of running a
+> python backend?
+
+> By accuracy I meant score rather. The graphs show hilbert leads to more calories
+
+> Let's do greedy + 2-opt. Could you create the site in a "demo" subdirectory
+
+### What was added
+
+| Path | What it is |
+|---|---|
+| `demo/src/core/*.ts` | TypeScript port of `problem.py`, `generator.py`, `greedy.py` (ratio formula only), `greedy_kd.py`, `two_opt.py`, `race.py` |
+| `demo/src/ui/*.ts`, `demo/src/main.ts`, `demo/index.html`, `demo/src/style.css` | The page: two map panels, planning replay, walking animation, score chart, results tables, pseudocode |
+| `demo/tests/parity.test.ts` + `demo/scripts/export_fixtures.py` | Checks that the TypeScript makes **exactly** the Python's decisions (13 maps, n = 1 to 500; all pass) |
+| `demo/tests/algorithms.test.ts` | k-d Greedy = naive Greedy, 2-opt never worse than Greedy, recorded flips replay to the final route |
+| `demo/README.md` | Run, test, and deploy to Cloudflare Pages |
+
+### Decisions the AI made that the group should review
+
+1. **TypeScript port instead of Flask/Pyodide.** With only two algorithms the port is small (~500 lines).
+   A static site needs no server on Cloudflare Pages, and the parity test catches the two versions drifting apart.
+2. **Hilbert was advised against as the "clever" algorithm.** Measured scores: on random maps Hilbert
+   scored higher than Greedy on 18% of maps at n = 14, 8% at n = 30 and 0% at n = 100. The default demo map
+   (seed 48, n = 14) happens to be one where Hilbert wins, which is probably why it looked better.
+3. **The 2-opt complexity string is corrected on the site.** The Python registry's
+   `"O(n log² n + P·n·L)"` leaves out the Θ(n) recompute after every accepted flip (`two_opt.py` line [L8]).
+   Measured accepted flips M ≈ 0.3·n (n = 250 to 4,000), so 2-opt is about Θ(n²) in practice, the same order as
+   Greedy. **If the spec requires the clever algorithm to asymptotically beat the straightforward one, Greedy
+   + 2-opt only wins on score.** Greedy vs. Greedy (k-d tree) is still the clean asymptotic pair (see Session 2).
+4. **Different random maps than Python** (mulberry32 instead of Mersenne Twister), so seeds don't carry
+   over between the CLI and the site. The algorithms are identical.
+5. **Light mode only.** No dark-mode set of the five food colors passed the colorblind-safety validator,
+   and every food type also has a distinct marker shape.
+6. **Browser timing is wall-clock** (`performance.now()`, repeated for at least 40 ms), not CPU time.
