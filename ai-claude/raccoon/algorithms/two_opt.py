@@ -1,6 +1,7 @@
 # =============================================================================
 #  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-10-29,
 #  at the request of George Rule. See AI_CONTRIBUTIONS.md for the full log.
+#  Updated 2026-11-03 (Claude): spoiled food is worth 0 -> estimate, then confirm.
 #  Human edits: please tag changed lines with   # [EDIT: <your name>]
 # =============================================================================
 """
@@ -16,17 +17,23 @@ BACKWARDS. If that loses fewer calories, keep it. Stop when no move helps.
 
 For ordinary TSP, checking a 2-opt move is easy because only two edges change.
 For the raccoon it is harder: reversing a stretch changes WHEN every item in
-it (and after it) is eaten. We still check each move in O(1) time using
-running totals ("subsequence data", as in the minimum-latency literature):
+it (and after it) is eaten. So each move is checked in two steps:
 
-  For the reversed stretch we keep   T = its walking time,
-                                     W = its total spoil weight,
-                                     C = its internal cost  sum(w * time since the stretch began).
-  Growing the stretch by one item at the front updates all three in O(1):
-        C <- C + d * W ;   T <- T + d ;   W <- W + w_new        (d = new first leg)
-  Then   change = (new cost of the stretch) - (old cost of the stretch)
-                + (how much later/earlier everything after it is eaten) * (weight after it)
-  and the old values come from prefix sums. So each candidate move is O(1).
+  1. ESTIMATE in O(1).  Pretend every item that is still fresh keeps losing
+     w calories per second and every spoiled item loses nothing. Under that
+     straight-line model a move can be scored with running totals
+     ("subsequence data", as in the minimum-latency literature):
+        for the reversed stretch keep   T = its walking time,
+                                        W = its total (still-fresh) spoil weight,
+                                        C = its internal cost  sum(w * time since the stretch began).
+        Growing the stretch by one item at the front updates all three in O(1):
+            C <- C + d * W ;   T <- T + d ;   W <- W + w_new        (d = new first leg)
+        estimate = (new cost of the stretch) - (old cost of the stretch)
+                 + (how much later/earlier everything after it is eaten) * (weight after it)
+     with the old values taken from prefix sums.
+  2. CONFIRM in Theta(n).  The estimate is only exact while no item crosses its
+     shelf life, so a move that looks good is re-scored with the real rules
+     (spoiled food = 0 calories) and kept only if it really loses fewer calories.
 
 Pseudocode (the [Lx] tags in the code point back to these lines)
 ----------
@@ -36,16 +43,20 @@ Pseudocode (the [Lx] tags in the code point back to these lines)
      3      improved <- false
      4      for i <- 1 to n
      5          for j <- i+1 to min(n, i+L-1)
-     6              delta <- change in spoilage if route[i..j] is reversed      # O(1)
-     7              if delta < 0
+     6              estimate <- estimated change if route[i..j] is reversed        # O(1)
+     7              if estimate < 0 and the EXACT loss after reversing is lower    # Theta(n)
      8                  reverse route[i..j];  recompute arrival times (Theta(n))
      9                  improved <- true
     10      if not improved: stop
     11  return route
 
-Running time:  O(n log^2 n) for the start, plus per pass Theta(n * L) checks
-               and Theta(n) per accepted move. L and P are constants (config.py),
-               so in practice it grows like n log^2 n -- but with a big constant.
+Running time:  O(n log^2 n + P * (n * L + V * n))
+               n log^2 n for the start (Greedy with k-d trees); per pass n * L
+               estimates at O(1) each, plus Theta(n) for each of the V moves that
+               looked good and were checked exactly (accepted moves included).
+               L and P are constants (config.py). V grows with n (on random maps
+               it is a fraction of n), so in practice this is roughly n^2 -- the
+               same order as plain Greedy. 2-opt wins on route quality, not speed.
                (Without the caps, local search has no good worst-case bound.)
 Memory:        Theta(n).
 
@@ -69,7 +80,7 @@ from . import greedy_kd
 KEY = "two_opt"
 NAME = "Greedy + 2-opt"
 TAGLINE = "Greedy, then flips stretches that help"
-TIME_COMPLEXITY = "O(n log² n + P·n·L)"
+TIME_COMPLEXITY = "O(n log² n + P·n·L + V·n)"     # V = moves checked exactly
 MEMORY_COMPLEXITY = "Θ(n)"
 MAX_N = None
 GROWTH_LABEL = "n log$^2$n"
@@ -94,37 +105,40 @@ def improve(instance: Instance, route: List[int], max_segment: int, max_passes: 
     n = len(route)
     if n < 3:
         return route
-    items, speed = instance.items, instance.speed
+    speed = instance.speed
     den_x, den_y = instance.start
     hypot = math.hypot
     eps = 1e-9
 
     for _pass in range(max_passes):                                       # [L2]
         improved = False                                                  # [L3]
-        X, Y, w, t, S, Wsuf = _route_arrays(instance, route)
+        a = _route_arrays(instance, route)
         i = 0
         while i < n - 1:                                                  # [L4]
             if i == 0:
                 prev_x, prev_y, t_prev = den_x, den_y, 0.0
             else:
-                prev_x, prev_y, t_prev = X[i - 1], Y[i - 1], t[i - 1]
-            T, C, W = 0.0, 0.0, w[i]          # reversed stretch = just route[i] so far
+                prev_x, prev_y, t_prev = a.X[i - 1], a.Y[i - 1], a.t[i - 1]
+            T, C, W = 0.0, 0.0, a.w[i]        # reversed stretch = just route[i] so far
             moved = False
             for j in range(i + 1, min(n, i + max_segment)):               # [L5]
-                d = hypot(X[j] - X[j - 1], Y[j] - Y[j - 1]) / speed      # put route[j] at the front
+                d = hypot(a.X[j] - a.X[j - 1], a.Y[j] - a.Y[j - 1]) / speed   # put route[j] at the front
                 C += d * W
                 T += d
-                W += w[j]
-                first_arrival = t_prev + hypot(X[j] - prev_x, Y[j] - prev_y) / speed
-                delta = (first_arrival * W + C) - (S[j + 1] - S[i])       # [L6] the stretch itself
-                if j + 1 < n:                                             # [L6] everything after it
-                    new_next = first_arrival + T + hypot(X[i] - X[j + 1], Y[i] - Y[j + 1]) / speed
-                    delta += (new_next - t[j + 1]) * Wsuf[j + 1]
-                if delta < -eps:                                          # [L7]
-                    route[i:j + 1] = route[i:j + 1][::-1]                 # [L8]
-                    X, Y, w, t, S, Wsuf = _route_arrays(instance, route)  # [L8]
-                    improved = moved = True                               # [L9]
-                    break
+                W += a.w[j]
+                first_arrival = t_prev + hypot(a.X[j] - prev_x, a.Y[j] - prev_y) / speed
+                estimate = (first_arrival * W + C) - (a.S[j + 1] - a.S[i])   # [L6] the stretch itself
+                if j + 1 < n:                                                # [L6] everything after it
+                    new_next = first_arrival + T + hypot(a.X[i] - a.X[j + 1], a.Y[i] - a.Y[j + 1]) / speed
+                    estimate += (new_next - a.t[j + 1]) * a.Wsuf[j + 1]
+                if estimate < -eps:                                       # [L7] looks good...
+                    flipped = route[:i] + route[i:j + 1][::-1] + route[j + 1:]
+                    new_tail = _tail_loss(instance, flipped, i, prev_x, prev_y, t_prev)
+                    if new_tail < a.loss_suffix[i] - eps:                 # [L7] ...and really is
+                        route = flipped                                   # [L8]
+                        a = _route_arrays(instance, route)                # [L8]
+                        improved = moved = True                           # [L9]
+                        break
             if not moved:
                 i += 1                     # after a successful move, try position i again
         if not improved:                                                  # [L10]
@@ -132,23 +146,62 @@ def improve(instance: Instance, route: List[int], max_segment: int, max_passes: 
     return route
 
 
-def _route_arrays(instance: Instance, route: List[int]):
-    """Coordinates, weights, arrival times and running totals for a route. Theta(n)."""
+class _RouteArrays:
+    """Everything the move checks need about the current route, in route order."""
+    __slots__ = ("X", "Y", "w", "t", "S", "Wsuf", "loss_suffix")
+
+
+def _route_arrays(instance: Instance, route: List[int]) -> _RouteArrays:
+    """Coordinates, arrival times, estimate weights and running totals. Theta(n).
+
+    w[p]           spoil weight used by the ESTIMATE: the item's w while it is still
+                   fresh at its current arrival time, 0 once it has spoiled
+    S[p]           sum of w*t over the first p positions
+    Wsuf[p]        total estimate weight of positions p..n-1
+    loss_suffix[p] EXACT calories lost by positions p..n-1 (spoiled food = 0)
+    """
     items, speed = instance.items, instance.speed
-    X = [items[r].x for r in route]
-    Y = [items[r].y for r in route]
-    w = [items[r].food.spoil_weight for r in route]
     n = len(route)
-    t = [0.0] * n
+    a = _RouteArrays()
+    a.X = [items[r].x for r in route]
+    a.Y = [items[r].y for r in route]
+    a.t = [0.0] * n
+    a.w = [0.0] * n
+    exact = [0.0] * n
     clock, px, py = 0.0, instance.start[0], instance.start[1]
     for p in range(n):
-        clock += math.hypot(X[p] - px, Y[p] - py) / speed
-        t[p] = clock
-        px, py = X[p], Y[p]
-    S = [0.0] * (n + 1)              # S[p] = sum of w*t over the first p items
+        item = items[route[p]]
+        clock += math.hypot(a.X[p] - px, a.Y[p] - py) / speed
+        a.t[p] = clock
+        px, py = a.X[p], a.Y[p]
+        a.w[p] = 0.0 if item.is_spoiled_at(clock) else item.food.spoil_weight
+        exact[p] = item.loss_at(clock)
+    a.S = [0.0] * (n + 1)
     for p in range(n):
-        S[p + 1] = S[p] + w[p] * t[p]
-    Wsuf = [0.0] * (n + 1)           # Wsuf[p] = total weight of items p..n-1
+        a.S[p + 1] = a.S[p] + a.w[p] * a.t[p]
+    a.Wsuf = [0.0] * (n + 1)
+    a.loss_suffix = [0.0] * (n + 1)
     for p in range(n - 1, -1, -1):
-        Wsuf[p] = Wsuf[p + 1] + w[p]
-    return X, Y, w, t, S, Wsuf
+        a.Wsuf[p] = a.Wsuf[p + 1] + a.w[p]
+        a.loss_suffix[p] = a.loss_suffix[p + 1] + exact[p]
+    return a
+
+
+def _tail_loss(instance: Instance, route: List[int], start: int,
+               x: float, y: float, clock: float) -> float:
+    """EXACT calories lost by route[start:], starting from (x, y) at time `clock`. Theta(n).
+
+    Summed from the END so the result is computed in the same order as
+    loss_suffix (and the TypeScript demo), keeping comparisons consistent.
+    """
+    items, speed = instance.items, instance.speed
+    losses = []
+    for r in route[start:]:
+        item = items[r]
+        clock += math.hypot(item.x - x, item.y - y) / speed
+        x, y = item.x, item.y
+        losses.append(item.loss_at(clock))
+    total = 0.0
+    for value in reversed(losses):
+        total += value
+    return total

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   AI-GENERATED FILE - written by Claude (Anthropic AI), 2026-11-03,
-  at the request of tonycons. See ../AI_CONTRIBUTIONS.md for the full log.
+  at the request of tonycons. See ../ai-claude/AI_CONTRIBUTIONS.md for the full log.
   Human edits: please tag changed lines with an HTML comment  [EDIT: your name]
 -->
 <html lang="en">
@@ -19,7 +19,7 @@
       <h1>The Greedy Raccoon</h1>
       <p class="lede">
         A raccoon leaves its den to eat every piece of food on a 100&nbsp;m × 100&nbsp;m map. Food loses calories every
-        second it waits, and spoiled food makes the raccoon sick (negative calories). <strong>Which order should it eat
+        second it waits, and spoiled food is worth nothing (0 calories). <strong>Which order should it eat
         in?</strong> Two algorithms race on the same map: the straightforward <span class="algo-key" data-algo="greedy">Greedy</span>
         and the clever <span class="algo-key" data-algo="two_opt">Greedy + 2-opt</span>.
       </p>
@@ -83,7 +83,7 @@
                   aria-label="Step chart of calories banked over time for each algorithm. Use left and right arrow keys to step through meals; values are also in the results table below."></canvas>
           <div class="tooltip" id="tooltip" role="status" hidden></div>
         </div>
-        <p class="help">Each step up is a meal. A step down is spoiled food. Hover, or focus the chart and use ← →, to read exact values.</p>
+        <p class="help">Each step up is a meal. A flat step is spoiled food (0 calories). Hover, or focus the chart and use ← →, to read exact values.</p>
       </section>
 
       <section class="card" aria-labelledby="results-title">
@@ -105,11 +105,12 @@
           <h3>Scoring</h3>
           <p>Each food type has a calorie value and a shelf life. Freshness drops in a straight line from 1 (fresh) to 0
             (spoiled) over that shelf life, and eating an item at time <var>t</var> is worth</p>
-          <p class="formula">score(<var>t</var>) = calories × (1 − <var>t</var> / shelf&nbsp;life) = calories − <var>w</var>·<var>t</var>,
-            &nbsp; where <var>w</var> = calories / shelf&nbsp;life</p>
-          <p>So the total score is <em>(all calories on the map) − Σ <var>w<sub>i</sub></var>·<var>t<sub>i</sub></var></em>.
-            The first part is the same for every route, so maximizing calories is the same as minimizing the
-            <strong>weighted sum of arrival times</strong>, which makes this a weighted Traveling Repairman problem.
+          <p class="formula">score(<var>t</var>) = calories × max(0, 1 − <var>t</var> / shelf&nbsp;life)
+            = calories − <var>w</var>·min(<var>t</var>, shelf&nbsp;life), &nbsp; where <var>w</var> = calories / shelf&nbsp;life</p>
+          <p>Spoiled food is worth 0, never less. So the total score is <em>(all calories on the map) −
+            Σ <var>w<sub>i</sub></var>·min(<var>t<sub>i</sub></var>, shelf&nbsp;life<sub>i</sub>)</em>: maximizing
+            calories means minimizing a <strong>weighted sum of arrival times</strong> in which each item stops
+            counting once it has spoiled, a variant of the weighted Traveling Repairman problem.
             The raccoon walks 1&nbsp;m/s in straight lines and eats instantly.</p>
         </div>
 
@@ -144,24 +145,27 @@
               same <var>w</var>, so the best fish is just the <em>nearest</em> fish. One k-d tree per food type answers
               "nearest uneaten fish?" in O(log n).
               <strong>Step 2:</strong> repeatedly pick a stretch of the route and walk it backwards when that loses fewer
-              calories. Running totals of the stretch's walking time, weight and internal cost make each check O(1).</p>
+              calories. Running totals of the stretch's walking time, weight and internal cost give an O(1) estimate
+              of each move (exact while no item crosses its shelf life); moves that look good are confirmed with the
+              exact score, so a flip is only kept if it really helps.</p>
 <pre><code>TWO-OPT-RACCOON(items, den, L, P)
  1  route ← GREEDY-KD(items, den)
  2  repeat at most P times
  3      improved ← false
  4      for i ← 1 to n
  5          for j ← i+1 to min(n, i+L−1)
- 6              Δ ← change in spoilage if route[i..j]
+ 6              est ← estimated change if route[i..j]
                     is reversed                  ▹ O(1)
- 7              if Δ &lt; 0
+ 7              if est &lt; 0 and the exact loss
+                    after reversing is lower     ▹ Θ(n)
  8                  reverse route[i..j]           ▹ Θ(n)
  9                  improved ← true
 10      if not improved: stop
 11  return route</code></pre>
             <dl class="complexity">
-              <div><dt>Time</dt><dd>O(n log² n + P·n·L + M·n) expected, with L = 50 and P = 20 fixed and
-                M = flips accepted. On random maps M grows like 0.3·n, so in practice this is about n², the
-                same order as Greedy. 2-opt's advantage is the score, not asymptotic speed.</dd></div>
+              <div><dt>Time</dt><dd>O(n log² n + P·n·L + V·n) expected, with L = 50 and P = 20 fixed and
+                V = moves checked exactly (accepted flips included). V grows with n, so in practice this is
+                about n², the same order as Greedy. 2-opt's advantage is the score, not asymptotic speed.</dd></div>
               <div><dt>Memory</dt><dd>Θ(n)</dd></div>
             </dl>
           </article>

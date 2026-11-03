@@ -302,7 +302,7 @@ class RacePanel:
             eaten = t >= eaten_time and not planning
             when = eaten_time if eaten else t          # freshness frozen once eaten
             fresh = item.freshness_at(when)
-            spoiled = fresh < 0
+            spoiled = item.is_spoiled_at(when)        # worth 0 calories from now on
             style = theme.food_style(item.food.name)
             art["marker"].set_color(theme.ROTTEN_FOOD if spoiled else style["color"])
             art["marker"].set_alpha(0.22 if eaten else 1.0)
@@ -319,7 +319,9 @@ class RacePanel:
         # live stats
         eaten_count = 0 if planning else int(np.searchsorted(self.times[1:], t, side="right"))
         score = self.score_after[eaten_count]
-        spoiled_count = sum(1 for sc in self.solution.item_scores[:eaten_count] if sc < 0)
+        spoiled_count = sum(1 for item_id, at in zip(self.solution.order[:eaten_count],
+                                                     self.solution.arrival_times[:eaten_count])
+                            if self.instance.items[item_id].is_spoiled_at(at))
         self.score_text.set_text(f"{score:,.0f} cal")
         if planning:
             return
@@ -476,7 +478,7 @@ class RaceAnimation:
         fig.text(0.05, 0.978, f"The Greedy Raccoon — {instance.n} food items{seed_text}",
                  fontsize=19, fontweight="bold", color=theme.INK, va="top")
         fig.text(0.05, 0.942, "Phase 1: each algorithm plans (bar = real CPU time).  Phase 2: every raccoon "
-                 "eats everything; food loses freshness each second and spoiled food (×) costs calories.",
+                 "eats everything; food loses freshness each second and spoiled food (×) is worth 0 calories.",
                  fontsize=11, color=theme.INK_SECONDARY, va="top")
         self._food_legend()
         if self.interactive:

@@ -17,7 +17,7 @@ GROWTH_LABEL, growth, solve) and add it to the tuple at the bottom.
     two_opt          greedy + 2-opt        local search
     balas_simonetti  greedy + linear-time restricted DP
     vnd              greedy + 2-opt <-> DP, taking turns
-    held_karp        Theta(n^2 * 2^n)      exact optimum, small maps only
+    held_karp        O(n^2 * 2^n * F)      exact optimum, small maps only
     brute_force      Theta(n * n!)         checker for the tests
 """
 from __future__ import annotations

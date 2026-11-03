@@ -264,3 +264,78 @@ takes exponential time. Anything faster than Greedy has to be a heuristic.
 5. **Light mode only.** No dark-mode set of the five food colors passed the colorblind-safety validator,
    and every food type also has a distinct marker shape.
 6. **Browser timing is wall-clock** (`performance.now()`, repeated for at least 40 ms), not CPU time.
+
+---
+
+## Session 4 - 2026-11-03: spoiled food = 0 calories, cleanup
+
+| | |
+|---|---|
+| **AI tool** | Claude (Anthropic), model Claude Opus 5.5, via claude.ai (working in a copy of the repo; files written back into George's local `team-repo`) |
+| **Prompted by** | George Rule |
+| **Git** | not committed by the AI; review the changes in VS Code's Source Control panel, then commit |
+
+**Prompt (verbatim):**
+> Take a look at the current state of the team-repo in vscode and clean up the code, add comments, and
+> make it so that the racoon when it visits a spoiled node, gets 0 calories instead of negative calories.
+
+### The rule change and what it forced
+
+`score(t) = calories × max(0, 1 − t/shelf_life)`: spoiled food is worth 0, never negative. Each item's
+loss is now `w·min(t, shelf_life)`, which stops growing at the shelf life. That breaks the "every item
+costs exactly w·t" property that three algorithms relied on, so they were changed to stay correct:
+
+| Algorithm | Before | Now |
+|---|---|---|
+| Held-Karp (`held_karp.py`) | one number per (S, j) cell | each cell keeps a short **Pareto front** of (time, loss) labels (`pareto.py`). Still **exact**: matches brute force on 120 random maps (n = 1..8) |
+| Balas–Simonetti (`balas_simonetti.py`) | one number per state | same Pareto labels. Still exact inside its window: matches brute force (112 cases), and equals Held-Karp when k = n |
+| 2-opt (`two_opt.py`, `demo/src/core/twoOpt.ts`) | exact O(1) move check | O(1) **estimate** (spoiled items count as losing nothing), then an exact Θ(n) **confirmation** before a flip is kept, so a flip never makes a route worse |
+| Greedy, Greedy k-d (`greedy.py`, `greedy_kd.py`, `greedy.ts`, `kdtree.ts`) | rotten food still "urgent" | food that will already be spoiled on arrival is ranked below all fresh food (nearest rotten item first). The k-d version still gives identical routes (the argument is in its docstring) |
+
+The pruning rule that keeps the DP lists short: a later-but-cheaper label wins if
+`loss_A + (time_A − time_B) · W_live(time_B) ≤ loss_B`, where `W_live` = spoil weight of the remaining
+food that is still fresh (proof in `pareto.py`). Under the old negative rule it would collapse every
+list to one entry, which is ordinary Held-Karp.
+
+**Cost of exactness:** Held-Karp now takes about 1.3 s at n = 14 and 7 s at n = 16 (was 0.65 s at n = 16).
+The benchmark now runs it for n = 2..15, and the full benchmark takes about 9 minutes (was 6). Its bound is O(n²·2ⁿ·F), where F = the longest list in a cell
+(it reaches about 20 at n = 16).
+
+### Cleanup
+
+- **`demo/` path bug:** the web demo was written as `ai-claude/demo` but committed at the repo root.
+  `scripts/export_fixtures.py` could not find `raccoon`, the README commands said `cd ai-claude/demo`,
+  the Cloudflare root directory was `ai-claude/demo`, and every file header pointed to a missing
+  `AI_CONTRIBUTIONS.md`. All fixed for `demo/` at the root. **If Cloudflare Pages is already set up,
+  check that its Root directory is `demo`.**
+- **Spoiled counting bug:** the Python animation and the website counted "spoiled" as "score < 0", which
+  would always be 0 under the new rule. Both now ask `is_spoiled_at` / `isSpoiledAt`.
+- 2-opt complexity corrected in both languages to `O(n log² n + P·n·L + V·n)` (V = moves checked exactly).
+- Unused imports removed. Docstrings, the README table, the website's "How it works" text and config
+  comments updated for the new rule. The greedy-formula percentages in `config.py` were re-measured.
+- Parity fixtures regenerated. Checks run in the AI's sandbox: **23 Python tests pass**, **47 demo
+  tests pass**, and **`tsc` strict type-check passes**. The demo tests were run with Node 22 and a small
+  vitest stand-in, because npm packages could not be downloaded there, so run `npm test` once yourselves.
+
+### New results (AI's machine; re-run `python main.py tradeoff` on yours)
+
+| Algorithm | Extra spoilage vs best, n = 12 / 100 / 1000 | Time at n = 1000 |
+|---|---|---|
+| Hilbert curve | 27.2% / 7.0% / 3.4% | 6 ms |
+| Greedy | 21.4% / 2.5% / 1.0% | 194 ms |
+| Greedy (k-d tree) | same routes as Greedy | 38 ms |
+| **Greedy + 2-opt** | **12.4% / 0.2% / 0.1%** | **183 ms** |
+| Greedy + Balas–Simonetti | 1.3% / 0.2% / 0.2% | 2.89 s |
+| Greedy + VND | 3.6% / 0.1% / 0.0% | 1.22 s |
+| Held-Karp | 0% (optimal) at n = 12, 203 ms | too slow |
+
+- **Most satisficing is now Greedy + 2-opt.** It's the only algorithm under the 1 s limit at n = 1000
+  that passes once the quality bar is relaxed (to 13%). That's the pair the website already showcases.
+  The DP-based searches got slower with the new rule and now miss the speed limit.
+- Differences between algorithms shrink on big maps: at n = 1000 most food spoils whatever the order,
+  and spoiled food no longer costs extra. The small maps are where the algorithms really differ.
+- With the new rule, the README-inspired "instant" greedy formula does slightly better than the default
+  "ratio" one (8% vs. 10% extra spoilage at n = 8..12). The default was left alone, because changing it
+  changes Greedy's routes everywhere, including on the website.
+- **The top-level `README.md` (the group's own text) still says "The score is decreased if the item is
+  spoiled."** It was not edited by the AI, so update it to match the new rule.

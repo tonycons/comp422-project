@@ -19,26 +19,35 @@ THE GREEDY RACCOON (our variant of the Traveling Repairman Problem)
 
         freshness(t) = 1 - t / shelf_life          (1.0 = fresh, 0.0 = spoiled)
 
-  Once freshness goes below 0 the item is SPOILED and eating it makes the
-  raccoon sick, i.e. the item's score becomes NEGATIVE.
+  Once freshness reaches 0 the item is SPOILED: eating it is allowed but it
+  is worth 0 calories (it never goes below 0).
 * The score for eating an item at time t is
 
-        score(t) = calories * freshness(t)
-                 = calories  -  (calories / shelf_life) * t
-                 = calories  -  w * t        where  w = calories / shelf_life
+        score(t) = calories * max(0, freshness(t))
 
-  We call  w  the item's SPOIL WEIGHT: "calories lost per second of waiting".
+  and the calories LOST by waiting until time t are
+
+        loss(t)  = calories - score(t) = w * min(t, shelf_life)
+                   where  w = calories / shelf_life
+
+  We call  w  the item's SPOIL WEIGHT: "calories lost per second of waiting",
+  and an item stops losing calories once it has spoiled (there is nothing left).
 * Total score of a route = sum of the item scores.  Higher is better.
+  Equivalently:  total score = (sum of all calories) - sum_i loss_i(t_i),
+  so the algorithms MINIMIZE the total loss.
 
-Why this exact scoring?  Because then
-
-        total score = (sum of all calories)  -  sum over items of  w_i * t_i
-
-The first part is the same for every route, so maximizing the score is the
-same as minimizing the WEIGHTED SUM OF ARRIVAL TIMES (the "weighted latency").
-That is precisely the (weighted) Traveling Repairman / Minimum Latency Problem
-mentioned in our README, and it is what lets the Held-Karp dynamic program
-find the true optimum (see algorithms/held_karp.py).
+What this means for the algorithms
+  This is our variant of the Traveling Repairman / Minimum Latency Problem
+  (minimize a weighted sum of arrival times), except that each item's cost
+  stops growing at its shelf life. Because of that cap, the cost of eating an
+  item depends on the exact clock time it is reached, so:
+    * Held-Karp and the Balas-Simonetti DP keep, for each table cell, every
+      (time, loss) pair that might still lead to the best route (a "Pareto
+      front"); see held_karp.py. They are still exact.
+    * 2-opt estimates each move in O(1) and confirms promising ones with the
+      exact score; see two_opt.py. It never accepts a move that makes things worse.
+  (Before 2026-11-03 spoiled food scored NEGATIVE calories, which made every
+  item's cost exactly w*t; that version is in the git history if you need it.)
 """
 from __future__ import annotations
 
@@ -85,15 +94,27 @@ class FoodItem:
         return (self.x, self.y)
 
     def freshness_at(self, t: float) -> float:
-        """1.0 = perfectly fresh, 0.0 = just spoiled, negative = rotten."""
+        """1.0 = perfectly fresh, 0.0 = just spoiled, negative = spoiled for a while.
+
+        (Freshness itself keeps falling; the SCORE is what stops at 0.)
+        """
         return 1.0 - self.food.decay_rate * t
 
     def score_at(self, t: float) -> float:
-        """Calories the raccoon actually gets if it eats this item at time t."""
-        return self.food.calories * self.freshness_at(t)
+        """Calories the raccoon gets if it eats this item at time t (never below 0)."""
+        return self.food.calories * max(0.0, self.freshness_at(t))
+
+    def loss_at(self, t: float) -> float:
+        """Calories lost by eating at time t instead of time 0:  w * min(t, shelf_life).
+
+        Written as calories * min(1, decay_rate * t) so the TypeScript demo can
+        compute exactly the same floating-point number.
+        """
+        return self.food.calories * min(1.0, self.food.decay_rate * t)
 
     def is_spoiled_at(self, t: float) -> bool:
-        return self.freshness_at(t) < 0.0
+        """True once the item is worth nothing (freshness has reached 0)."""
+        return self.freshness_at(t) <= 0.0
 
 
 # -----------------------------------------------------------------------------
@@ -141,7 +162,7 @@ class Solution:
     arrival_times: List[float]     # arrival_times[k] = time the raccoon reaches order[k]
     item_scores: List[float]       # item_scores[k]   = calories gained from order[k]
     total_score: float             # sum of item_scores
-    spoilage_loss: float           # calories lost to waiting = sum(w_i * t_i)  (the DP minimizes this)
+    spoilage_loss: float           # calories lost to waiting = sum of loss_i(t_i)  (what the algorithms minimize)
     total_time: float              # time the last item is eaten
     spoiled_count: int             # how many items were rotten when eaten
     notes: Dict[str, object] = field(default_factory=dict)  # algorithm-specific extras
@@ -167,7 +188,7 @@ def evaluate_route(instance: Instance, order: Sequence[int], algorithm: str,
         here = item.position
         arrival_times.append(clock)
         item_scores.append(item.score_at(clock))              # eat it
-        if item.is_spoiled_at(clock):
+        if item.is_spoiled_at(clock):                         # worth 0 calories now
             spoiled += 1
 
     total_score = sum(item_scores)

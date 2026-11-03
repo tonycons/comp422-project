@@ -38,7 +38,7 @@ matplotlib into it (needs Python 3.9+ and internet once). Then a menu opens:
   1) Watch the race: Greedy vs Held-Karp (window)
   2) Save the race as results/race.gif
   3) Quick benchmark + plots   (about 1 minute)
-  4) Full benchmark + plots    (about 6 minutes)
+  4) Full benchmark + plots    (about 9 minutes)
   5) Speed-vs-quality study: which algorithm is "good enough"?
   6) Re-draw plots from saved results
   7) Run correctness tests
@@ -63,6 +63,14 @@ its algorithm needed to compute the route. All bars share one scale, and the slo
 algorithm fills 3.5 s of screen time. *Phase 2, walking:* all raccoons leave the den
 together, and a chart tracks the calories each one has banked.
 
+### Scoring
+
+Eating an item at time *t* is worth `calories × max(0, 1 − t / shelf_life)`: food loses freshness
+in a straight line and **spoiled food is worth 0 calories** (never negative). Every algorithm
+minimizes the calories lost to waiting, `Σ w·min(t, shelf_life)`, where `w = calories / shelf_life`.
+Because each item stops losing calories once it has spoiled, Held-Karp and the windowed DP keep a
+short list of (time, loss) options per table cell (`raccoon/algorithms/pareto.py`) so they stay exact.
+
 ### The algorithms
 
 | Key | Algorithm | Running time | Quality | Source |
@@ -70,11 +78,14 @@ together, and a chart tracks the calories each one has banked.
 | `hilbert` | Space-filling (Hilbert) curve order | Θ(n log n) | poor: ignores food | Platzman & Bartholdi 1989 |
 | `greedy` | **Greedy** (our straightforward algorithm) | Θ(n²) | ok | Smith 1956 (ratio rule) |
 | `greedy_kd` | Greedy with k-d trees: *same routes*, faster | O(n log² n) expected | = greedy | Bentley 1975, 1992 |
-| `two_opt` | Greedy + 2-opt local search | ≈ n log² n + passes·n·L | good | Croes 1958; Silva et al. 2012 |
-| `balas_simonetti` | Greedy + Balas–Simonetti windowed DP | ≈ n log² n + passes·n·k²·2ᵏ | good on small maps | Balas & Simonetti 2001 |
+| `two_opt` | Greedy + 2-opt local search | O(n log² n + P·n·L + V·n), ≈ n² in practice | good | Croes 1958; Silva et al. 2012 |
+| `balas_simonetti` | Greedy + Balas–Simonetti windowed DP | O(n log² n + P·n·k²·2ᵏ·F) | very good, slow on big maps | Balas & Simonetti 2001 |
 | `vnd` | Greedy + Variable Neighborhood Descent (2-opt ⇄ DP) | ≈ n log² n + rounds·n | best heuristic | Mladenović & Hansen 1997 |
-| `held_karp` | **Held–Karp DP** (exact) | Θ(n²·2ⁿ) | optimal | Held & Karp 1962 |
+| `held_karp` | **Held–Karp DP** (exact) | O(n²·2ⁿ·F) | optimal | Held & Karp 1962 |
 | `brute_force` | Try every order (test checker) | Θ(n·n!) | optimal | – |
+
+P, L, k = fixed settings in `config.py`. V = 2-opt moves checked exactly. F = the longest (time, loss)
+list in a DP cell (small in practice; Held-Karp reports it as `notes["max_front"]`).
 
 **"Most satisficing"** (Simon 1956): the study (`tradeoff`) runs every algorithm on maps with
 n = 12, 100 and 1000 items. Pass marks are set in `raccoon/config.py`: at most 3% extra
@@ -112,7 +123,7 @@ raccoon/visuals/animate.py    the race animation
 raccoon/visuals/plots.py      the charts
 assets/sprites/               drop PNGs here to replace shapes with pictures
 tests/                        unit tests
-demo/                         web version (TypeScript): Greedy vs. Greedy + 2-opt, see demo/README.md
+../demo/                      web version (TypeScript, at the repo root): Greedy vs. Greedy + 2-opt
 ```
 
 The algorithm files have `[L1]`, `[L2]`… tags in the code that match the numbered pseudocode

@@ -8,8 +8,6 @@ Correctness tests.   Run:  python main.py test   (or the VS Code Testing panel)
 
 Uses only Python's built-in `unittest`, so nothing extra to install.
 """
-import itertools
-import math
 import unittest
 
 from raccoon.algorithms import brute_force, greedy, held_karp
@@ -23,13 +21,25 @@ def tiny_instance(points, food=FoodType("test", calories=100, shelf_life=100)):
 
 
 class TestScoring(unittest.TestCase):
-    def test_freshness_is_linear_and_goes_negative(self):
-        item = tiny_instance([(0, 0)]).items[0]
+    def test_freshness_is_linear_and_spoiled_food_scores_zero(self):
+        item = tiny_instance([(0, 0)]).items[0]          # 100 cal, shelf life 100 s
         self.assertAlmostEqual(item.freshness_at(0), 1.0)
         self.assertAlmostEqual(item.freshness_at(50), 0.5)
         self.assertAlmostEqual(item.freshness_at(100), 0.0)
-        self.assertLess(item.score_at(150), 0)          # spoiled food costs calories
-        self.assertTrue(item.is_spoiled_at(101))
+        self.assertAlmostEqual(item.score_at(50), 50.0)
+        self.assertEqual(item.score_at(150), 0.0)        # spoiled food is worth 0, never less
+        self.assertAlmostEqual(item.loss_at(50), 50.0)
+        self.assertAlmostEqual(item.loss_at(150), 100.0)  # the loss stops growing at the shelf life
+        self.assertTrue(item.is_spoiled_at(100))
+        self.assertFalse(item.is_spoiled_at(99))
+
+    def test_spoiled_items_count_and_score(self):
+        # den (0,0) -> (0,30) at t=30 (fresh) -> (0,230) at t=230 (spoiled, worth 0)
+        inst = tiny_instance([(0, 30), (0, 230)])
+        sol = evaluate_route(inst, [0, 1], "manual")
+        self.assertEqual(sol.item_scores[1], 0.0)
+        self.assertEqual(sol.spoiled_count, 1)
+        self.assertAlmostEqual(sol.total_score, 70.0)
 
     def test_evaluate_route_hand_computed(self):
         # den (0,0) -> (3,4) is 5 s -> (3,10) is 6 s more (t=11)
@@ -59,7 +69,7 @@ class TestHeldKarp(unittest.TestCase):
                                        msg=f"n={n} seed={seed}")
 
     def test_dp_cost_equals_real_spoilage(self):
-        """The 'charge while walking' trick gives exactly sum(w_i * t_i)."""
+        """The DP's best loss equals the real spoilage of the route it returns."""
         for seed in range(10):
             inst = generate_instance(9, seed=seed)
             hk = held_karp.solve(inst)
@@ -89,6 +99,14 @@ class TestGreedy(unittest.TestCase):
     def test_nearest_neighbor_on_a_line(self):
         inst = tiny_instance([(3, 0), (1, 0), (2, 0)])
         self.assertEqual(greedy.solve(inst, attractiveness="nearest").order, [1, 2, 0])
+
+    def test_spoiled_food_is_eaten_last(self):
+        """Food that is already worthless can wait; fresh food comes first."""
+        short = FoodType("short", calories=100, shelf_life=5)     # spoiled before we reach it
+        long_ = FoodType("long", calories=100, shelf_life=1000)
+        items = [FoodItem(0, 10, 0, short), FoodItem(1, 0, 40, long_)]
+        inst = Instance(items=items, start=(0.0, 0.0), speed=1.0, width=50, height=50)
+        self.assertEqual(greedy.solve(inst).order, [1, 0])        # far fresh item first
 
     def test_recorded_decisions_match_route(self):
         inst = generate_instance(8, seed=3)

@@ -206,7 +206,8 @@ def report(summary: dict) -> str:
                      f"both aspiration levels (at most {summary['quality_bar']:g}% extra spoilage at every size; "
                      f"{_fmt_time(st['time_mean'])} per map at n = {sizes[-1]}).")
         others = sorted((k for k in keys if verdict[k]["speed_ok"] and verdict[k]["worst_extra"] is not None
-                         and k != rec), key=lambda k: verdict[k]["worst_extra"])
+                         and k != rec),
+                        key=lambda k: (verdict[k]["worst_extra"], stats[(k, sizes[-1])]["time_mean"]))  # ties -> faster
         if others:
             nxt = others[0]
             lines.append(f"Runner-up: {plain_text(ALGORITHMS[nxt].name)} - would qualify at a "

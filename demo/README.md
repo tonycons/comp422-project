@@ -1,4 +1,4 @@
-<!-- AI-GENERATED (Claude, 2026-11-03) - see ../AI_CONTRIBUTIONS.md -->
+<!-- AI-GENERATED (Claude, 2026-11-03) - see ../ai-claude/AI_CONTRIBUTIONS.md -->
 # The Greedy Raccoon: web demo
 
 A static website that races the two showcased algorithms on the same random map:
@@ -6,7 +6,7 @@ A static website that races the two showcased algorithms on the same random map:
 | | Algorithm | Time | Source it was ported from |
 |---|---|---|---|
 | Straightforward | **Greedy** (Smith's ratio rule) | Θ(n²) | `raccoon/algorithms/greedy.py` |
-| Clever | **Greedy + 2-opt** (k-d tree Greedy, then 2-opt flips) | O(n log² n + P·n·L + M·n) | `raccoon/algorithms/greedy_kd.py`, `two_opt.py` |
+| Clever | **Greedy + 2-opt** (k-d tree Greedy, then 2-opt flips) | O(n log² n + P·n·L + V·n) | `raccoon/algorithms/greedy_kd.py`, `two_opt.py` |
 
 It is plain TypeScript + [Vite](https://vite.dev), with no framework and no server. Everything runs in the browser.
 
@@ -15,7 +15,7 @@ It is plain TypeScript + [Vite](https://vite.dev), with no framework and no serv
 Needs Node 20.19+ (22 recommended).
 
 ```bash
-cd ai-claude/demo
+cd demo
 npm install
 npm run dev        # http://localhost:5173, live reload
 npm test           # TypeScript must match the Python routes exactly
@@ -30,7 +30,7 @@ npm run preview    # serve dist/ locally
 1. Cloudflare dashboard → *Workers & Pages* → *Create* → *Pages* → *Connect to Git*, then pick this repo.
 2. Build settings:
    - Framework preset: **None** (or *Vite*)
-   - **Root directory:** `ai-claude/demo`
+   - **Root directory:** `demo`
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
 3. Node version: the `.node-version` file in this folder pins Node 22.
@@ -38,7 +38,7 @@ npm run preview    # serve dist/ locally
 **Option B: upload from your machine**
 
 ```bash
-cd ai-claude/demo
+cd demo
 npm run build
 npx wrangler pages deploy dist --project-name greedy-raccoon
 ```
@@ -49,11 +49,12 @@ The algorithms exist twice: Python (the graded implementation, benchmarks, tests
 (this site). `tests/parity.test.ts` checks that both produce **identical routes**
 on 13 maps from n = 1 to n = 500, and that `src/core/config.ts` matches `raccoon/config.py`.
 
-If you change `problem.py`, `config.py`, `greedy.py`, `greedy_kd.py` or `two_opt.py`:
+If you change `ai-claude/raccoon/problem.py`, `config.py`, `greedy.py`, `greedy_kd.py` or `two_opt.py`:
 
 ```bash
-cd ai-claude/demo
+cd demo
 npm run fixtures   # re-runs the Python and rewrites tests/fixtures/python_routes.json
+                   # (on Windows, if "python3" is not found: python scripts/export_fixtures.py)
 npm test           # fails if the TypeScript now disagrees, so port the change to src/core/
 ```
 
