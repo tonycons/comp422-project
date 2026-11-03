@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -16,7 +16,7 @@ import "./style.css";
 import * as config from "./core/config";
 import { MAX_SEED, randomSeed } from "./core/generator";
 import * as greedy from "./core/greedy";
-import type { AlgorithmKey, Solution } from "./core/problem";
+import { isSpoiledAt, type AlgorithmKey, type Solution } from "./core/problem";
 import { makeRace, type Race } from "./core/race";
 import * as twoOpt from "./core/twoOpt";
 import { fmtInt, fmtMs, fmtPct, fmtSeconds } from "./ui/format";
@@ -227,7 +227,7 @@ function render(): void {
       let spoiled = 0;
       for (let i = 0; i < k; i++) {
         banked += s.itemScores[i];
-        if (s.itemScores[i] < 0) spoiled++;
+        if (isSpoiledAt(race.instance.items[s.order[i]], s.arrivalTimes[i])) spoiled++;  // worth 0 now
       }
       panel.stat.banked.textContent = fmtInt(banked);
       panel.stat.eaten.textContent = `${k} / ${s.order.length}${k === s.order.length ? " ✓" : ""}`;
@@ -357,7 +357,7 @@ function renderRoutes(): void {
       row.insertCell().textContent = fmtSeconds(s.arrivalTimes[k]);
       const cal = row.insertCell();
       cal.textContent = fmtInt(s.itemScores[k]);
-      if (s.itemScores[k] < 0) cal.className = "neg";
+      if (isSpoiledAt(items[s.order[k]], s.arrivalTimes[k])) cal.className = "neg";   // spoiled: 0 cal
     }
   }
 }

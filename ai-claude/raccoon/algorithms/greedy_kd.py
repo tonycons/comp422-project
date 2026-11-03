@@ -19,6 +19,12 @@ all the fish, the best one is simply the NEAREST fish. Keep one k-d tree
 uneaten item, and pick the best of those few candidates. That is exactly the
 item Greedy would pick -- the tests check that the routes are identical.
 
+Why it still works with spoiled food: all items of one type have the same
+shelf life and all start fresh at time 0, so the NEAREST item of a type is
+also the one reached soonest. If even that one would be spoiled on arrival,
+every item of that type would be, and then Greedy wants the nearest rotten one
+anyway. Either way the nearest item of each type is the only candidate needed.
+
 Pseudocode (the [Lx] tags in the code point back to these lines)
 ----------
     GREEDY-KD-RACCOON(items, den)

@@ -1,6 +1,7 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-03 (Claude): tracks the clock so spoiled food can go last.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -12,6 +13,9 @@
  * simply the NEAREST fish. Keep one k-d tree per food type; each step ask each
  * tree for its nearest uneaten item and take the best of those few candidates.
  * That is exactly the item Greedy would pick (tests/algorithms.test.ts checks it).
+ * It still works with spoiled food: items of one type share a shelf life and all
+ * start fresh, so the nearest one is also reached soonest; if even it would be
+ * spoiled on arrival, all of that type would be, and Greedy wants the nearest anyway.
  *
  *     GREEDY-KD-RACCOON(items, den)
  *      1  for each food type f:  tree[f] <- BUILD-KD-TREE(items of type f)
@@ -140,21 +144,25 @@ export function greedyKdRoute(inst: Instance): number[] {
   for (const [name, pts] of byType) trees.set(name, new KDTree(pts));
 
   let [hx, hy] = inst.start;                                           // [L2]
+  let clock = 0;                                                       // [L2]
   const route: number[] = [];
   for (let step = 0; step < items.length; step++) {                    // [L3]
     let best = -1;                                                     // [L4]
     let bestValue = -Infinity;
+    let bestTravel = 0;
     for (const tree of trees.values()) {                               // [L5]
       if (tree.remaining === 0) continue;
       const j = tree.nearest(hx, hy);                                  // [L6]
       const travel = distance(hx, hy, items[j].x, items[j].y) / inst.speed;
-      const value = attractiveness(items[j], travel);
+      const value = attractiveness(items[j], travel, clock + travel);
       if (value > bestValue || (value === bestValue && j < best)) {    // [L7]
         best = j;
         bestValue = value;
+        bestTravel = travel;
       }
     }
-    hx = items[best].x;                                                // [L8]
+    clock += bestTravel;                                               // [L8]
+    hx = items[best].x;
     hy = items[best].y;
     trees.get(items[best].food.name)!.delete(best);                    // [L8]
     route.push(best);                                                  // [L9]

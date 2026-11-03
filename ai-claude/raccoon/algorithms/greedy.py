@@ -38,6 +38,10 @@ Running time:  Theta(n^2)
 
 Memory:  Theta(n)  -- just the `remaining` list and the `route` list.
 
+Spoiled food: an item that will already be spoiled when the raccoon gets
+there is worth 0 and loses nothing more, so every formula ranks it below all
+still-fresh food, and among spoiled items the nearest comes first.
+
 Correctness: it always returns a valid route (every item exactly once,
 because each loop iteration moves exactly one item from `remaining` to
 `route`). It is NOT guaranteed to be optimal -- that is the point of the
@@ -82,25 +86,39 @@ def growth(n: float) -> float:
 TINY = 1e-9   # avoids dividing by zero when food is right under the raccoon
 
 
+def rotten_value(travel: float) -> float:
+    """What a formula returns for food that will already be spoiled on arrival.
+
+    Spoiled food is worth 0 calories and cannot lose any more, so there is no
+    reason to hurry to it: any still-fresh item beats it (fresh values are > 0),
+    and among rotten items the nearest one wins (-travel is largest).
+    """
+    return -travel
+
+
 def attractiveness_ratio(item: FoodItem, travel: float, arrival: float) -> float:
     """DEFAULT: decay rate x calories / travel time   (Smith's ratio rule).
 
     - calories x decay rate = calories this item loses every second it waits
     - / travel time         = per second spent walking to it
     "Eat whatever is losing the most calories per second of walking."
-    In our tests this was the best of the simple rules (about 13% more
-    spoilage than optimal on average, n = 8..12).
+    Food that will be spoiled when we get there is losing nothing any more,
+    so it goes last (see rotten_value).
     """
+    if item.is_spoiled_at(arrival):
+        return rotten_value(travel)
     return item.food.decay_rate * item.food.calories / max(travel, TINY)
 
 
 def attractiveness_instant(item: FoodItem, travel: float, arrival: float) -> float:
     """README-inspired: urgency x calories-on-arrival, per second of walking.
 
-    - calories on arrival : the "instant gratification" (negative if it will be rotten)
+    - calories on arrival : the "instant gratification" (0 if it will be spoiled)
     - decay rate          : urgency multiplier, so food that is about to spoil goes first
     - / travel time       : a far-away meal has to be worth the walk
     """
+    if item.is_spoiled_at(arrival):
+        return rotten_value(travel)
     calories_on_arrival = item.score_at(arrival)
     return item.food.decay_rate * calories_on_arrival / max(travel, TINY)
 

@@ -2,7 +2,7 @@
   "name": "greedy-raccoon-demo",
   "private": true,
   "version": "1.0.0",
-  "description": "AI-GENERATED (Claude, 2026-11-03) - web demo of the Greedy Raccoon: Greedy vs. Greedy + 2-opt. See ../AI_CONTRIBUTIONS.md",
+  "description": "AI-GENERATED (Claude, 2026-11-03) - web demo of the Greedy Raccoon: Greedy vs. Greedy + 2-opt. See ../ai-claude/AI_CONTRIBUTIONS.md",
   "type": "module",
   "scripts": {
     "dev": "vite",

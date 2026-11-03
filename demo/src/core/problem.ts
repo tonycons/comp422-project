@@ -1,18 +1,21 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-03 (Claude): spoiled food is worth 0 calories.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
  * The problem itself: food, the map, and how a route is scored.
  * TypeScript port of raccoon/problem.py -- see that file for the full write-up.
  *
- *   freshness(t) = 1 - t / shelfLife          (1 = fresh, 0 = spoiled, < 0 = rotten)
- *   score(t)     = calories * freshness(t)    (negative once spoiled)
- *   total score  = sum of item scores  =  (all calories) - sum_i w_i * t_i
+ *   freshness(t) = 1 - t / shelfLife                 (1 = fresh, 0 = spoiled)
+ *   score(t)     = calories * max(0, freshness(t))   (spoiled food is worth 0, never less)
+ *   loss(t)      = calories - score(t) = w * min(t, shelfLife)
+ *   total score  = sum of item scores  =  (all calories) - sum_i loss_i(t_i)
  *
- * where w = calories / shelfLife is the item's SPOIL WEIGHT. Maximizing the
- * score is therefore the weighted Traveling Repairman (minimum latency) problem.
+ * where w = calories / shelfLife is the item's SPOIL WEIGHT (calories lost per
+ * second while it is still fresh). This is a weighted Traveling Repairman
+ * (minimum latency) problem whose costs stop growing at each shelf life.
  *
  * NOTE on floating point: every formula below is written in the same order as
  * the Python, so both versions make identical decisions (see tests/parity.test.ts).
@@ -39,9 +42,19 @@ export interface FoodItem {
   food: FoodType;
 }
 
+/** 1 = perfectly fresh, 0 = just spoiled, negative = spoiled for a while (the SCORE stops at 0). */
 export const freshnessAt = (item: FoodItem, t: number): number => 1.0 - decayRate(item.food) * t;
-export const scoreAt = (item: FoodItem, t: number): number => item.food.calories * freshnessAt(item, t);
-export const isSpoiledAt = (item: FoodItem, t: number): boolean => freshnessAt(item, t) < 0.0;
+
+/** Calories the raccoon gets if it eats this item at time t (never below 0). */
+export const scoreAt = (item: FoodItem, t: number): number =>
+  item.food.calories * Math.max(0.0, freshnessAt(item, t));
+
+/** Calories lost by eating at time t instead of time 0: w * min(t, shelfLife). Same formula as Python. */
+export const lossAt = (item: FoodItem, t: number): number =>
+  item.food.calories * Math.min(1.0, decayRate(item.food) * t);
+
+/** True once the item is worth nothing (freshness has reached 0). */
+export const isSpoiledAt = (item: FoodItem, t: number): boolean => freshnessAt(item, t) <= 0.0;
 
 export interface Instance {
   items: FoodItem[];
@@ -71,9 +84,9 @@ export interface Solution {
   arrivalTimes: number[];   // arrivalTimes[k] = time the raccoon reaches order[k]
   itemScores: number[];     // itemScores[k]   = calories gained from order[k]
   totalScore: number;
-  spoilageLoss: number;     // calories lost to waiting = sum(w_i * t_i)
+  spoilageLoss: number;     // calories lost to waiting = sum of loss_i(t_i)
   totalTime: number;        // time the last item is eaten
-  spoiledCount: number;     // how many items were rotten when eaten
+  spoiledCount: number;     // how many items were spoiled (worth 0) when eaten
 }
 
 /**

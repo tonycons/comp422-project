@@ -10,7 +10,7 @@ The Greedy Raccoon - COMP 422 algorithms project.  Start here.
     python main.py demo                 watch Greedy vs Held-Karp race on a random map
     python main.py demo --n 12 --seed 3 --save results/race.gif
     python main.py demo --n 60 --algos greedy two_opt vnd     (pick the racers)
-    python main.py benchmark            full CPU-time benchmark, every algorithm (about 6 minutes)
+    python main.py benchmark            full CPU-time benchmark, every algorithm (about 9 minutes)
     python main.py benchmark --quick    smaller benchmark                         (about a minute)
     python main.py benchmark --only greedy held_karp     just the original two
     python main.py tradeoff             speed-vs-quality study: which algorithm is "good enough"?
@@ -128,7 +128,7 @@ MENU = """
   1) Watch the race: Greedy vs Held-Karp (window)
   2) Save the race as results/race.gif
   3) Quick benchmark + plots   (about 1 minute)
-  4) Full benchmark + plots    (about 6 minutes)
+  4) Full benchmark + plots    (about 9 minutes)
   5) Speed-vs-quality study: which algorithm is "good enough"?
   6) Re-draw plots from saved results
   7) Run correctness tests

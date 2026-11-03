@@ -1,13 +1,13 @@
 # =============================================================================
 #  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-#  at the request of tonycons. See ../../AI_CONTRIBUTIONS.md for the full log.
+#  at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
 #  Human edits: please tag changed lines with   # [EDIT: <your name>]
 # =============================================================================
 """
 Export maps + the PYTHON routes for them, so the TypeScript tests can check that
 the web demo makes exactly the same decisions as the Python implementation.
 
-    cd ai-claude/demo
+    cd demo
     python3 scripts/export_fixtures.py         (or: npm run fixtures)
 
 Re-run this whenever you change greedy.py, greedy_kd.py, two_opt.py,
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 DEMO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(DEMO.parent))          # ai-claude/, so `import raccoon` works
+sys.path.insert(0, str(DEMO.parent / "ai-claude"))   # the Python project, so `import raccoon` works
 
 from raccoon import config                                  # noqa: E402
 from raccoon.algorithms import greedy, greedy_kd, two_opt   # noqa: E402

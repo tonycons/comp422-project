@@ -1,6 +1,7 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-03 (Claude): spoiled food is worth 0 -> estimate, then confirm.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -14,11 +15,15 @@
  *     before:  den -> a -> [b -> c -> d] -> e ...
  *     after:   den -> a -> [d -> c -> b] -> e ...
  *
- * Reversing a stretch changes WHEN every item in it (and after it) is eaten, but
- * each candidate move is still checked in O(1) with running totals for the
- * reversed stretch:  T = walking time,  W = total spoil weight,
- * C = internal cost sum(w * time since the stretch began). Growing the stretch by
- * one item at the front:  C <- C + d*W;  T <- T + d;  W <- W + w_new.
+ * Reversing a stretch changes WHEN every item in it (and after it) is eaten,
+ * so each move is checked in two steps:
+ *   1. ESTIMATE in O(1): pretend still-fresh items keep losing w per second and
+ *      spoiled items lose nothing, and use running totals for the reversed stretch:
+ *      T = walking time, W = total (still-fresh) spoil weight,
+ *      C = internal cost sum(w * time since the stretch began). Growing the stretch
+ *      by one item at the front:  C <- C + d*W;  T <- T + d;  W <- W + w_new.
+ *   2. CONFIRM in Theta(n): a move that looks good is re-scored with the real rules
+ *      (spoiled food = 0 calories) and kept only if it really loses fewer calories.
  *
  *     TWO-OPT-RACCOON(items, den, L, P)        L = longest stretch, P = max passes
  *      1  route <- GREEDY-KD(items, den)
@@ -26,27 +31,26 @@
  *      3      improved <- false
  *      4      for i <- 1 to n
  *      5          for j <- i+1 to min(n, i+L-1)
- *      6              delta <- change in spoilage if route[i..j] is reversed   # O(1)
- *      7              if delta < 0
+ *      6              estimate <- estimated change if route[i..j] is reversed    # O(1)
+ *      7              if estimate < 0 and the EXACT loss after reversing is lower # Theta(n)
  *      8                  reverse route[i..j];  recompute arrival times (Theta(n))
  *      9                  improved <- true
  *     10      if not improved: stop
  *     11  return route
  *
- * Running time: O(n log^2 n) for the start, plus per pass Theta(n*L) checks and
- * Theta(n) per accepted move. L and P are constants (config.ts).  Memory: Theta(n).
+ * Running time: O(n log^2 n + P*(n*L + V*n)), V = moves checked exactly (accepted
+ * ones included). L and P are constants (config.ts). Memory: Theta(n).
  */
 import * as config from "./config";
 import { greedyKdRoute } from "./kdtree";
-import { evaluateRoute, spoilWeight, type Instance, type Solution } from "./problem";
+import { evaluateRoute, isSpoiledAt, lossAt, spoilWeight, type Instance, type Solution } from "./problem";
 
 export const INFO = {
   key: "two_opt" as const,
   name: "Greedy + 2-opt",
   tagline: "Greedy, then flips stretches that help",
-  // M = accepted flips. The Python registry says "O(n log² n + P·n·L)", which leaves out the
-  // Theta(n) recompute per flip; measured M is about 0.3n on random maps, so this is ~n² in practice.
-  timeComplexity: "O(n log² n + P·n·L + M·n)",
+  // V = moves checked exactly (accepted flips included); it grows with n, so this is ~n² in practice.
+  timeComplexity: "O(n log² n + P·n·L + V·n)",
   memoryComplexity: "Θ(n)",
 };
 
@@ -70,7 +74,7 @@ export function solve(inst: Instance, recordMoves = false): TwoOptResult {
 /** 2-opt local search on `start` (item ids). Returns the improved route. */
 export function improve(inst: Instance, start: readonly number[], maxSegment: number, maxPasses: number,
                         onMove?: (i: number, j: number) => void): number[] {
-  const route = [...start];
+  let route = [...start];
   const n = route.length;
   if (n < 3) return route;
   const speed = inst.speed;
@@ -97,17 +101,22 @@ export function improve(inst: Instance, start: readonly number[], maxSegment: nu
         T += d;
         W += a.w[j];
         const firstArrival = tPrev + Math.hypot(a.X[j] - prevX, a.Y[j] - prevY) / speed;
-        let delta = (firstArrival * W + C) - (a.S[j + 1] - a.S[i]);           // [L6] the stretch itself
+        let estimate = (firstArrival * W + C) - (a.S[j + 1] - a.S[i]);        // [L6] the stretch itself
         if (j + 1 < n) {                                                      // [L6] everything after it
           const newNext = firstArrival + T + Math.hypot(a.X[i] - a.X[j + 1], a.Y[i] - a.Y[j + 1]) / speed;
-          delta += (newNext - a.t[j + 1]) * a.Wsuf[j + 1];
+          estimate += (newNext - a.t[j + 1]) * a.Wsuf[j + 1];
         }
-        if (delta < -eps) {                                                   // [L7]
-          reverse(route, i, j);                                               // [L8]
-          a = routeArrays(inst, route);                                       // [L8]
-          onMove?.(i, j);
-          improved = moved = true;                                            // [L9]
-          break;
+        if (estimate < -eps) {                                                // [L7] looks good...
+          const flipped = [...route];
+          reverse(flipped, i, j);
+          const newTail = tailLoss(inst, flipped, i, prevX, prevY, tPrev);
+          if (newTail < a.lossSuffix[i] - eps) {                              // [L7] ...and really is
+            route = flipped;                                                  // [L8]
+            a = routeArrays(inst, route);                                     // [L8]
+            onMove?.(i, j);
+            improved = moved = true;                                          // [L9]
+            break;
+          }
         }
       }
       if (!moved) i++;                    // after a successful move, try position i again
@@ -126,28 +135,59 @@ export function reverse<T>(route: T[], i: number, j: number): void {
   }
 }
 
-/** Coordinates, weights, arrival times and running totals for a route. Theta(n). */
+/**
+ * Everything the move checks need about the current route, in route order. Theta(n).
+ *   w[p]          spoil weight used by the ESTIMATE (0 once the item has spoiled)
+ *   S[p]          sum of w*t over the first p positions
+ *   Wsuf[p]       total estimate weight of positions p..n-1
+ *   lossSuffix[p] EXACT calories lost by positions p..n-1 (spoiled food = 0)
+ */
 function routeArrays(inst: Instance, route: readonly number[]) {
   const n = route.length;
   const X = new Float64Array(n);
   const Y = new Float64Array(n);
   const w = new Float64Array(n);
   const t = new Float64Array(n);
+  const exact = new Float64Array(n);
   let clock = 0;
   let [px, py] = inst.start;
   for (let p = 0; p < n; p++) {
     const it = inst.items[route[p]];
     X[p] = it.x;
     Y[p] = it.y;
-    w[p] = spoilWeight(it.food);
     clock += Math.hypot(X[p] - px, Y[p] - py) / inst.speed;
     t[p] = clock;
     px = X[p];
     py = Y[p];
+    w[p] = isSpoiledAt(it, clock) ? 0.0 : spoilWeight(it.food);
+    exact[p] = lossAt(it, clock);
   }
-  const S = new Float64Array(n + 1);       // S[p] = sum of w*t over the first p items
+  const S = new Float64Array(n + 1);
   for (let p = 0; p < n; p++) S[p + 1] = S[p] + w[p] * t[p];
-  const Wsuf = new Float64Array(n + 1);    // Wsuf[p] = total weight of items p..n-1
-  for (let p = n - 1; p >= 0; p--) Wsuf[p] = Wsuf[p + 1] + w[p];
-  return { X, Y, w, t, S, Wsuf };
+  const Wsuf = new Float64Array(n + 1);
+  const lossSuffix = new Float64Array(n + 1);
+  for (let p = n - 1; p >= 0; p--) {
+    Wsuf[p] = Wsuf[p + 1] + w[p];
+    lossSuffix[p] = lossSuffix[p + 1] + exact[p];
+  }
+  return { X, Y, w, t, S, Wsuf, lossSuffix };
+}
+
+/**
+ * EXACT calories lost by route[start..], starting from (x, y) at time `clock`. Theta(n).
+ * Summed from the END, in the same order as lossSuffix and the Python, so comparisons agree.
+ */
+function tailLoss(inst: Instance, route: readonly number[], start: number,
+                  x: number, y: number, clock: number): number {
+  const losses: number[] = [];
+  for (let p = start; p < route.length; p++) {
+    const it = inst.items[route[p]];
+    clock += Math.hypot(it.x - x, it.y - y) / inst.speed;
+    x = it.x;
+    y = it.y;
+    losses.push(lossAt(it, clock));
+  }
+  let total = 0;
+  for (let k = losses.length - 1; k >= 0; k--) total += losses[k];
+  return total;
 }

@@ -28,8 +28,9 @@ RACCOON_SPEED = 1.0           # meters per second (a casual raccoon waddle)
 # uniformly at random.
 #   calories   = value when perfectly fresh
 #   shelf_life = seconds until it is fully spoiled (freshness hits 0)
-# A short shelf life = "eat me first!".  Add, remove, or retune freely; if you
-# add a new name, also give it a color/marker in visuals/theme.py.
+# A short shelf life = "eat me first!". Once spoiled, food is worth 0 calories.
+# Add, remove, or retune freely; if you add a new name, also give it a
+# color/marker in visuals/theme.py (and copy the change to demo/src/core/config.ts).
 FOOD_TYPES = [
     FoodType("fish",        calories=300, shelf_life=150),   # very tasty, spoils very fast
     FoodType("blueberries", calories=90,  shelf_life=250),   # small snack, spoils fairly fast
@@ -49,9 +50,10 @@ FOOD_TYPES = [
 #   "readme"  - the formula sketched in our README, taken literally:
 #               decay_rate * freshness_on_arrival / calories
 #   "nearest" - plain nearest-neighbor (ignores food entirely), a sanity baseline
-# Measured against the optimal (Held-Karp) route on random maps with n = 8..12,
-# the extra calories lost to spoilage were on average about:
-#   ratio +13%,  nearest +17%,  instant +27%,  readme +186%
+# Measured against the optimal (Held-Karp) route on random maps with n = 8..12
+# (spoiled food = 0 calories), the extra calories lost to spoilage were on average:
+#   instant +8%,  ratio +10%,  nearest +12%,  readme +80%
+# "ratio" stays the default because the web demo (demo/) and all saved results use it.
 GREEDY_ATTRACTIVENESS = "ratio"
 
 # -----------------------------------------------------------------------------
@@ -69,7 +71,7 @@ LOCAL_SEARCH_MAX_PASSES = 20   # safety cap on improvement passes/rounds (P)
 # -----------------------------------------------------------------------------
 DEMO_N = 14        # number of food items in the demo race (Held-Karp is skipped above HELD_KARP_MAX_N)
 DEMO_SEED = 48     # random seed for the demo map; change it to get a different map
-HELD_KARP_MAX_N = 16           # the race leaves Held-Karp out for bigger maps (too slow)
+HELD_KARP_MAX_N = 16           # the race leaves Held-Karp out for bigger maps (n = 16 takes ~7 s)
 
 # Which algorithms race side by side (in this order). Any keys from
 # raccoon/algorithms/__init__.py work; 6 or fewer fit best on screen.
@@ -104,7 +106,7 @@ BENCHMARK_SIZES = {
     "two_opt":         list(range(100, 2001, 100)),      # 100 .. 2,000
     "balas_simonetti": list(range(100, 1001, 100)),      # 100 .. 1,000
     "vnd":             list(range(100, 1001, 100)),      # 100 .. 1,000
-    "held_karp":       list(range(2, 17)),               # 2 .. 16  (n = 16 takes ~1 s per run)
+    "held_karp":       list(range(2, 16)),               # 2 .. 15  (n = 15 takes ~3 s per run)
     "brute_force":     list(range(2, 10)),               # 2 .. 9 (only if you ask for it)
 }
 QUICK_BENCHMARK_SIZES = {                       # used by  --quick

@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -240,7 +240,7 @@ export class MapView {
       }
 
       traceShape(ctx, style.shape, x, y, r);
-      ctx.fillStyle = fresh < 0 ? COLORS.rottenFood : style.color;
+      ctx.fillStyle = fresh <= 0 ? COLORS.rottenFood : style.color;   // spoiled = worth 0
       ctx.fill();
       if (r >= 3.5) {                          // 2px surface ring keeps overlaps legible
         ctx.strokeStyle = COLORS.surface;
@@ -255,7 +255,7 @@ export class MapView {
         const by = y + r + 4;
         ctx.fillStyle = COLORS.grid;
         ctx.fillRect(bx, by, w, h);
-        if (fresh < 0) {
+        if (fresh <= 0) {
           ctx.fillStyle = COLORS.spoiled;
           ctx.fillRect(bx, by, w, h);
         } else {
