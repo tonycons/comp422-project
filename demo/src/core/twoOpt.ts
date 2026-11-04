@@ -21,22 +21,26 @@
  *      spoiled items lose nothing, and use running totals for the reversed stretch:
  *      T = walking time, W = total (still-fresh) spoil weight,
  *      C = internal cost sum(w * time since the stretch began). Growing the stretch
- *      by one item at the front:  C <- C + d*W;  T <- T + d;  W <- W + w_new.
+ *      by one item at the front (d = the new first leg):
+ *          C = C + d*W
+ *          T = T + d
+ *          W = W + w_new
  *   2. CONFIRM in Theta(n): a move that looks good is re-scored with the real rules
  *      (spoiled food = 0 calories) and kept only if it really loses fewer calories.
  *
- *     TWO-OPT-RACCOON(items, den, L, P)        L = longest stretch, P = max passes
- *      1  route <- GREEDY-KD(items, den)
+ *     TWO-OPT-RACCOON(items, den, L, P)        L: longest stretch, P: max passes
+ *      1  route = GREEDY-KD(items, den)
  *      2  repeat at most P times
- *      3      improved <- false
- *      4      for i <- 1 to n
- *      5          for j <- i+1 to min(n, i+L-1)
- *      6              estimate <- estimated change if route[i..j] is reversed    # O(1)
+ *      3      improved = false
+ *      4      for i = 1 to n
+ *      5          for j = i+1 to min(n, i+L-1)
+ *      6              estimate = estimated change if route[i..j] is reversed     # O(1)
  *      7              if estimate < 0 and the EXACT loss after reversing is lower # Theta(n)
- *      8                  reverse route[i..j];  recompute arrival times (Theta(n))
- *      9                  improved <- true
- *     10      if not improved: stop
- *     11  return route
+ *      8                  reverse route[i..j]                                     # O(L)
+ *      9                  recompute arrival times                                 # Theta(n)
+ *     10                  improved = true
+ *     11      if not improved: stop
+ *     12  return route
  *
  * Running time: O(n log^2 n + P*(n*L + V*n)), V = moves checked exactly (accepted
  * ones included). L and P are constants (config.ts). Memory: Theta(n).
@@ -68,7 +72,7 @@ export function solve(inst: Instance, recordMoves = false): TwoOptResult {
   const moves: Move[] | null = recordMoves ? [] : null;
   const route = improve(inst, startRoute, config.TWO_OPT_MAX_SEGMENT, config.LOCAL_SEARCH_MAX_PASSES,
     moves ? (i, j) => moves.push([i, j]) : undefined);
-  return { solution: evaluateRoute(inst, route, "two_opt"), startRoute, moves }; // [L11]
+  return { solution: evaluateRoute(inst, route, "two_opt"), startRoute, moves }; // [L12]
 }
 
 /** 2-opt local search on `start` (item ids). Returns the improved route. */
@@ -112,16 +116,16 @@ export function improve(inst: Instance, start: readonly number[], maxSegment: nu
           const newTail = tailLoss(inst, flipped, i, prevX, prevY, tPrev);
           if (newTail < a.lossSuffix[i] - eps) {                              // [L7] ...and really is
             route = flipped;                                                  // [L8]
-            a = routeArrays(inst, route);                                     // [L8]
+            a = routeArrays(inst, route);                                     // [L9]
             onMove?.(i, j);
-            improved = moved = true;                                          // [L9]
+            improved = moved = true;                                          // [L10]
             break;
           }
         }
       }
       if (!moved) i++;                    // after a successful move, try position i again
     }
-    if (!improved) break;                                                     // [L10]
+    if (!improved) break;                                                     // [L11]
   }
   return route;
 }

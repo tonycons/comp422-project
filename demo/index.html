@@ -119,22 +119,30 @@
             <h3><span class="algo-key" data-algo="greedy">Greedy</span> · straightforward</h3>
             <p>Standing where it is, the raccoon scores every uneaten item and walks to the most attractive one, then
               repeats. Attractiveness is Smith's ratio rule: <em>calories lost per second of waiting ÷ seconds of
-              walking to it</em>. It never looks more than one step ahead.</p>
+              walking to it</em>. Food that would already be spoiled on arrival ranks below all fresh food (nearest
+              first). It never looks more than one step ahead.</p>
 <pre><code>GREEDY-RACCOON(items, den, speed)
- 1  here ← den;  clock ← 0
- 2  remaining ← all n items;  route ← empty
- 3  while remaining is not empty
- 4      best ← NIL;  best_value ← −∞
- 5      for each item j in remaining
- 6          travel ← distance(here, j) / speed
- 7          value  ← w_j / travel
- 8          if value > best_value
- 9              best ← j;  best_value ← value
-10      walk to best;  clock ← clock + travel
-11      remove best from remaining;  append to route
-12  return route</code></pre>
+ 1  here = den
+ 2  clock = 0
+ 3  remaining = all n items
+ 4  route = empty list
+ 5  while remaining is not empty
+ 6      best = NIL
+ 7      best_value = −∞
+ 8      for each item j in remaining
+ 9          travel = distance(here, j) / speed
+10          value = ATTRACTIVENESS(j, travel, clock + travel)
+11          if value > best_value
+12              best = j
+13              best_value = value
+14              best_travel = travel
+15      clock = clock + best_travel
+16      here = position of best
+17      remove best from remaining
+18      append best to route
+19  return route</code></pre>
             <dl class="complexity">
-              <div><dt>Time</dt><dd>Θ(n²): lines 6–9 run n + (n−1) + … + 1 times</dd></div>
+              <div><dt>Time</dt><dd>Θ(n²): lines 9–14 run n + (n−1) + … + 1 times</dd></div>
               <div><dt>Memory</dt><dd>Θ(n)</dd></div>
             </dl>
           </article>
@@ -149,19 +157,20 @@
               of each move (exact while no item crosses its shelf life); moves that look good are confirmed with the
               exact score, so a flip is only kept if it really helps.</p>
 <pre><code>TWO-OPT-RACCOON(items, den, L, P)
- 1  route ← GREEDY-KD(items, den)
+ 1  route = GREEDY-KD(items, den)
  2  repeat at most P times
- 3      improved ← false
- 4      for i ← 1 to n
- 5          for j ← i+1 to min(n, i+L−1)
- 6              est ← estimated change if route[i..j]
-                    is reversed                  ▹ O(1)
- 7              if est &lt; 0 and the exact loss
+ 3      improved = false
+ 4      for i = 1 to n
+ 5          for j = i+1 to min(n, i+L−1)
+ 6              estimate = estimated change if
+                    route[i..j] is reversed      ▹ O(1)
+ 7              if estimate &lt; 0 and the exact loss
                     after reversing is lower     ▹ Θ(n)
- 8                  reverse route[i..j]           ▹ Θ(n)
- 9                  improved ← true
-10      if not improved: stop
-11  return route</code></pre>
+ 8                  reverse route[i..j]           ▹ O(L)
+ 9                  recompute arrival times       ▹ Θ(n)
+10                  improved = true
+11      if not improved: stop
+12  return route</code></pre>
             <dl class="complexity">
               <div><dt>Time</dt><dd>O(n log² n + P·n·L + V·n) expected, with L = 50 and P = 20 fixed and
                 V = moves checked exactly (accepted flips included). V grows with n, so in practice this is
