@@ -19,11 +19,11 @@ export const RACCOON_SPEED = 1;        // meters per second
 
 // calories = value when perfectly fresh, shelfLife = seconds until fully spoiled
 export const FOOD_TYPES: FoodType[] = [
-  { name: "fish",        calories: 300, shelfLife: 150 },   // very tasty, spoils very fast
-  { name: "blueberries", calories: 90,  shelfLife: 250 },   // small snack, spoils fairly fast
-  { name: "pizza",       calories: 285, shelfLife: 350 },   // the classic
-  { name: "apple",       calories: 95,  shelfLife: 600 },   // keeps for a while
-  { name: "donut",       calories: 260, shelfLife: 900 },   // basically immortal
+    { name: "fish",        calories: 300, shelfLife: 150 },   // very tasty, spoils very fast
+    { name: "blueberries", calories: 90,  shelfLife: 250 },   // small snack, spoils fairly fast
+    { name: "pizza",       calories: 285, shelfLife: 350 },   // the classic
+    { name: "apple",       calories: 95,  shelfLife: 600 },   // keeps for a while
+    { name: "donut",       calories: 260, shelfLife: 900 },   // basically immortal
 ];
 
 // 2-opt local search (raccoon/config.py: TWO_OPT_MAX_SEGMENT, LOCAL_SEARCH_MAX_PASSES)

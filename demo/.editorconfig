@@ -1,0 +1,7 @@
+# AI-GENERATED (Claude, 2026-11-03) - see ../ai-claude/AI_CONTRIBUTIONS.md
+# TypeScript files are indented with 4 spaces.
+root = true
+
+[*.ts]
+indent_style = space
+indent_size = 4

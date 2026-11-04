@@ -13,12 +13,16 @@ export const fmtInt = (v: number): string => whole.format(Math.round(v) || 0).re
 
 /** Axis tick: full under 10,000, compact (12K) at or above. */
 export const fmtTick = (v: number, maxAbs: number): string =>
-  (maxAbs >= 10_000 ? compact.format(v) : whole.format(v)).replace("-", "−");
+    (maxAbs >= 10_000 ? compact.format(v) : whole.format(v)).replace("-", "−");
 
 export function fmtMs(ms: number): string {
-  if (ms < 0.1) return `${(ms * 1000).toFixed(0)} µs`;
-  if (ms < 10) return `${ms.toFixed(2)} ms`;
-  return `${ms.toFixed(0)} ms`;
+    if (ms < 0.1) {
+        return `${(ms * 1000).toFixed(0)} µs`;
+    }
+    if (ms < 10) {
+        return `${ms.toFixed(2)} ms`;
+    }
+    return `${ms.toFixed(0)} ms`;
 }
 
 export const fmtSeconds = (s: number): string => `${fmtInt(s)} s`;

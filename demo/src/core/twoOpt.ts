@@ -47,96 +47,112 @@
  */
 import * as config from "./config";
 import { greedyKdRoute } from "./kdtree";
-import { evaluateRoute, isSpoiledAt, lossAt, spoilWeight, type Instance, type Solution } from "./problem";
+import { evaluateRoute, isSpoiledAt, lossAt, spoilWeight, type Problem, type Solution } from "./problem";
 
 export const INFO = {
-  key: "two_opt" as const,
-  name: "Greedy + 2-opt",
-  tagline: "Greedy, then flips stretches that help",
-  // V = moves checked exactly (accepted flips included); it grows with n, so this is ~n² in practice.
-  timeComplexity: "O(n log² n + P·n·L + V·n)",
-  memoryComplexity: "Θ(n)",
+    key: "two_opt" as const,
+    name: "Greedy + 2-opt",
+    tagline: "Greedy, then flips stretches that help",
+    // V = moves checked exactly (accepted flips included); it grows with n, so this is ~n² in practice.
+    timeComplexity: "O(n log² n + P·n·L + V·n)",
+    memoryComplexity: "Θ(n)",
 };
 
 /** One accepted 2-opt move: route positions i..j were reversed. */
 export type Move = readonly [i: number, j: number];
 
 export interface TwoOptResult {
-  solution: Solution;
-  startRoute: number[];  // the Greedy route it started from
-  moves: Move[] | null;  // every accepted reversal, in order (for the animation)
+    solution: Solution;
+    startRoute: number[];  // the Greedy route it started from
+    moves: Move[] | null;  // every accepted reversal, in order (for the animation)
 }
 
-export function solve(inst: Instance, recordMoves = false): TwoOptResult {
-  const startRoute = greedyKdRoute(inst);                                      // [L1]
-  const moves: Move[] | null = recordMoves ? [] : null;
-  const route = improve(inst, startRoute, config.TWO_OPT_MAX_SEGMENT, config.LOCAL_SEARCH_MAX_PASSES,
-    moves ? (i, j) => moves.push([i, j]) : undefined);
-  return { solution: evaluateRoute(inst, route, "two_opt"), startRoute, moves }; // [L12]
+export function solve(inst: Problem, recordMoves = false): TwoOptResult {
+    const startRoute = greedyKdRoute(inst);                                      // [L1]
+    const moves: Move[] | null = recordMoves ? [] : null;
+    const route = improve(inst, startRoute, config.TWO_OPT_MAX_SEGMENT, config.LOCAL_SEARCH_MAX_PASSES,
+        moves ? (i, j) => moves.push([i, j]) : undefined);
+    return { solution: evaluateRoute(inst, route, "two_opt"), startRoute, moves }; // [L12]
 }
 
 /** 2-opt local search on `start` (item ids). Returns the improved route. */
-export function improve(inst: Instance, start: readonly number[], maxSegment: number, maxPasses: number,
-                        onMove?: (i: number, j: number) => void): number[] {
-  let route = [...start];
-  const n = route.length;
-  if (n < 3) return route;
-  const speed = inst.speed;
-  const [denX, denY] = inst.start;
-  const eps = 1e-9;
-
-  for (let pass = 0; pass < maxPasses; pass++) {                              // [L2]
-    let improved = false;                                                     // [L3]
-    let a = routeArrays(inst, route);
-    let i = 0;
-    while (i < n - 1) {                                                       // [L4]
-      let prevX: number, prevY: number, tPrev: number;
-      if (i === 0) {
-        prevX = denX; prevY = denY; tPrev = 0;
-      } else {
-        prevX = a.X[i - 1]; prevY = a.Y[i - 1]; tPrev = a.t[i - 1];
-      }
-      let T = 0, C = 0, W = a.w[i];          // reversed stretch = just route[i] so far
-      let moved = false;
-      const jEnd = Math.min(n, i + maxSegment);
-      for (let j = i + 1; j < jEnd; j++) {                                    // [L5]
-        const d = Math.hypot(a.X[j] - a.X[j - 1], a.Y[j] - a.Y[j - 1]) / speed; // put route[j] at the front
-        C += d * W;
-        T += d;
-        W += a.w[j];
-        const firstArrival = tPrev + Math.hypot(a.X[j] - prevX, a.Y[j] - prevY) / speed;
-        let estimate = (firstArrival * W + C) - (a.S[j + 1] - a.S[i]);        // [L6] the stretch itself
-        if (j + 1 < n) {                                                      // [L6] everything after it
-          const newNext = firstArrival + T + Math.hypot(a.X[i] - a.X[j + 1], a.Y[i] - a.Y[j + 1]) / speed;
-          estimate += (newNext - a.t[j + 1]) * a.Wsuf[j + 1];
-        }
-        if (estimate < -eps) {                                                // [L7] looks good...
-          const flipped = [...route];
-          reverse(flipped, i, j);
-          const newTail = tailLoss(inst, flipped, i, prevX, prevY, tPrev);
-          if (newTail < a.lossSuffix[i] - eps) {                              // [L7] ...and really is
-            route = flipped;                                                  // [L8]
-            a = routeArrays(inst, route);                                     // [L9]
-            onMove?.(i, j);
-            improved = moved = true;                                          // [L10]
-            break;
-          }
-        }
-      }
-      if (!moved) i++;                    // after a successful move, try position i again
+export function improve(inst: Problem, start: readonly number[], maxSegment: number, maxPasses: number,
+        onMove?: (i: number, j: number) => void): number[] {
+    let route = [...start];
+    const n = route.length;
+    if (n < 3) {
+        return route;
     }
-    if (!improved) break;                                                     // [L11]
-  }
-  return route;
+    const speed = inst.speed;
+    const [denX, denY] = inst.start;
+    const eps = 1e-9;
+
+    for (let pass = 0; pass < maxPasses; pass++) {                                        // [L2]
+        let improved = false;                                                             // [L3]
+        let a = routeArrays(inst, route);
+        let i = 0;
+        while (i < n - 1) {                                                               // [L4]
+            let prevX: number;
+            let prevY: number;
+            let tPrev: number;
+            if (i === 0) {
+                prevX = denX;
+                prevY = denY;
+                tPrev = 0;
+            } else {
+                prevX = a.X[i - 1];
+                prevY = a.Y[i - 1];
+                tPrev = a.t[i - 1];
+            }
+            // the reversed stretch is just route[i] so far
+            let T = 0;
+            let C = 0;
+            let W = a.w[i];
+            let moved = false;
+            const jEnd = Math.min(n, i + maxSegment);
+            for (let j = i + 1; j < jEnd; j++) {                                          // [L5]
+                const d = Math.hypot(a.X[j] - a.X[j - 1], a.Y[j] - a.Y[j - 1]) / speed; // put route[j] at the front
+                C += d * W;
+                T += d;
+                W += a.w[j];
+                const firstArrival = tPrev + Math.hypot(a.X[j] - prevX, a.Y[j] - prevY) / speed;
+                let estimate = (firstArrival * W + C) - (a.S[j + 1] - a.S[i]);            // [L6] the stretch itself
+                if (j + 1 < n) {                                                          // [L6] everything after it
+                    const newNext = firstArrival + T + Math.hypot(a.X[i] - a.X[j + 1], a.Y[i] - a.Y[j + 1]) / speed;
+                    estimate += (newNext - a.t[j + 1]) * a.Wsuf[j + 1];
+                }
+                if (estimate < -eps) {                                                    // [L7] looks good...
+                    const flipped = [...route];
+                    reverse(flipped, i, j);
+                    const newTail = tailLoss(inst, flipped, i, prevX, prevY, tPrev);
+                    if (newTail < a.lossSuffix[i] - eps) {                                // [L7] ...and really is
+                        route = flipped;                                                  // [L8]
+                        a = routeArrays(inst, route);                                     // [L9]
+                        onMove?.(i, j);
+                        improved = true;                                                  // [L10]
+                        moved = true;
+                        break;
+                    }
+                }
+            }
+            if (!moved) {  // after a successful move, try position i again
+                i++;
+            }
+        }
+        if (!improved) {                                                                  // [L11]
+            break;
+        }
+    }
+    return route;
 }
 
 /** Reverse route[i..j] in place (inclusive). */
 export function reverse<T>(route: T[], i: number, j: number): void {
-  for (; i < j; i++, j--) {
-    const tmp = route[i];
-    route[i] = route[j];
-    route[j] = tmp;
-  }
+    for (; i < j; i++, j--) {
+        const tmp = route[i];
+        route[i] = route[j];
+        route[j] = tmp;
+    }
 }
 
 /**
@@ -146,52 +162,56 @@ export function reverse<T>(route: T[], i: number, j: number): void {
  *   Wsuf[p]       total estimate weight of positions p..n-1
  *   lossSuffix[p] EXACT calories lost by positions p..n-1 (spoiled food = 0)
  */
-function routeArrays(inst: Instance, route: readonly number[]) {
-  const n = route.length;
-  const X = new Float64Array(n);
-  const Y = new Float64Array(n);
-  const w = new Float64Array(n);
-  const t = new Float64Array(n);
-  const exact = new Float64Array(n);
-  let clock = 0;
-  let [px, py] = inst.start;
-  for (let p = 0; p < n; p++) {
-    const it = inst.items[route[p]];
-    X[p] = it.x;
-    Y[p] = it.y;
-    clock += Math.hypot(X[p] - px, Y[p] - py) / inst.speed;
-    t[p] = clock;
-    px = X[p];
-    py = Y[p];
-    w[p] = isSpoiledAt(it, clock) ? 0.0 : spoilWeight(it.food);
-    exact[p] = lossAt(it, clock);
-  }
-  const S = new Float64Array(n + 1);
-  for (let p = 0; p < n; p++) S[p + 1] = S[p] + w[p] * t[p];
-  const Wsuf = new Float64Array(n + 1);
-  const lossSuffix = new Float64Array(n + 1);
-  for (let p = n - 1; p >= 0; p--) {
-    Wsuf[p] = Wsuf[p + 1] + w[p];
-    lossSuffix[p] = lossSuffix[p + 1] + exact[p];
-  }
-  return { X, Y, w, t, S, Wsuf, lossSuffix };
+function routeArrays(inst: Problem, route: readonly number[]) {
+    const n = route.length;
+    const X = new Float64Array(n);
+    const Y = new Float64Array(n);
+    const w = new Float64Array(n);
+    const t = new Float64Array(n);
+    const exact = new Float64Array(n);
+    let clock = 0;
+    let [px, py] = inst.start;
+    for (let p = 0; p < n; p++) {
+        const it = inst.items[route[p]];
+        X[p] = it.x;
+        Y[p] = it.y;
+        clock += Math.hypot(X[p] - px, Y[p] - py) / inst.speed;
+        t[p] = clock;
+        px = X[p];
+        py = Y[p];
+        w[p] = isSpoiledAt(it, clock) ? 0.0 : spoilWeight(it.food);
+        exact[p] = lossAt(it, clock);
+    }
+    const S = new Float64Array(n + 1);
+    for (let p = 0; p < n; p++) {
+        S[p + 1] = S[p] + w[p] * t[p];
+    }
+    const Wsuf = new Float64Array(n + 1);
+    const lossSuffix = new Float64Array(n + 1);
+    for (let p = n - 1; p >= 0; p--) {
+        Wsuf[p] = Wsuf[p + 1] + w[p];
+        lossSuffix[p] = lossSuffix[p + 1] + exact[p];
+    }
+    return { X, Y, w, t, S, Wsuf, lossSuffix };
 }
 
 /**
  * EXACT calories lost by route[start..], starting from (x, y) at time `clock`. Theta(n).
  * Summed from the END, in the same order as lossSuffix and the Python, so comparisons agree.
  */
-function tailLoss(inst: Instance, route: readonly number[], start: number,
-                  x: number, y: number, clock: number): number {
-  const losses: number[] = [];
-  for (let p = start; p < route.length; p++) {
-    const it = inst.items[route[p]];
-    clock += Math.hypot(it.x - x, it.y - y) / inst.speed;
-    x = it.x;
-    y = it.y;
-    losses.push(lossAt(it, clock));
-  }
-  let total = 0;
-  for (let k = losses.length - 1; k >= 0; k--) total += losses[k];
-  return total;
+function tailLoss(inst: Problem, route: readonly number[], start: number,
+        x: number, y: number, clock: number): number {
+    const losses: number[] = [];
+    for (let p = start; p < route.length; p++) {
+        const it = inst.items[route[p]];
+        clock += Math.hypot(it.x - x, it.y - y) / inst.speed;
+        x = it.x;
+        y = it.y;
+        losses.push(lossAt(it, clock));
+    }
+    let total = 0;
+    for (let k = losses.length - 1; k >= 0; k--) {
+        total += losses[k];
+    }
+    return total;
 }

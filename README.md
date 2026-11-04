@@ -2,6 +2,11 @@
 
 ### *Anthony Constantinescu, George Rule, Josh Burick, Lucas Sanderson*
 
+## Viewing the Solutions
+
+* Code for the demo of the selected algorithms is located in `demo/src`.
+* Demo is accessible at [https://comp422-project.pages.dev].
+
 ## Our Problem: *"The Greedy Raccoon"*
 
 This is is a modified version of the traveling repairman problem, in which a path must be selected through a graph of varying-distance nodes such that the sum of the waiting times for each node is the smallest possible. The problem consists of a list of food items that each have an XY position on a fixed-size 2D plane, and a type. Each type (e.g. pizza, fish), has a caloric value and a decay rate. Once a food item is eaten, it’s gone. The goal of the raccoon is to travel a path that results in the maximum caloric intake with the least spoiled food. The score of a given path that the raccoon takes is determined by each food item as follows:
@@ -22,7 +27,3 @@ We will implement two solution algorithms.
 
 * ### Hard (Dynamic Programming):
     We will implement a “Modified TSP Dynamic Programming (Held-Karp)”. This would be much more complex to code but could result in a more optimal solution because dynamic programming can calculate an entire path ahead of time instead of taking decisions in the moment like our greedy algorithm.
-
-
-## Viewing the Solutions
-## *Implementation in progress*

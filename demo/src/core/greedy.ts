@@ -1,12 +1,5 @@
-// =============================================================================
-//  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
-//  Updated 2026-11-03 (Claude): spoiled food is worth 0, so it is eaten last.
-//  Human edits: please tag changed lines with   // [EDIT: <your name>]
-// =============================================================================
 /**
  * STRAIGHTFORWARD ALGORITHM: Greedy ("instant gratification")
- * Port of raccoon/algorithms/greedy.py with its default "ratio" formula.
  *
  * Standing where it is, the raccoon scores every uneaten item with an
  * ATTRACTIVENESS number, walks to the most attractive one, eats it, repeats.
@@ -38,14 +31,14 @@
  * Running time Theta(n^2): lines 9-14 run n + (n-1) + ... + 1 = n(n+1)/2 times.
  * Memory Theta(n).
  */
-import { decayRate, distance, evaluateRoute, isSpoiledAt, type FoodItem, type Instance, type Solution } from "./problem";
+import { decayRate, distance, evaluateRoute, isSpoiledAt, type FoodItem, type Problem, type Solution } from "./problem";
 
 export const INFO = {
-  key: "greedy" as const,
-  name: "Greedy",
-  tagline: "picks the best-looking next meal",
-  timeComplexity: "Θ(n²)",
-  memoryComplexity: "Θ(n)",
+    key: "greedy" as const,
+    name: "Greedy",
+    tagline: "picks the best-looking next meal",
+    timeComplexity: "Θ(n²)",
+    memoryComplexity: "Θ(n)",
 };
 
 /**
@@ -60,64 +53,64 @@ export const INFO = {
  */
 export function attractiveness(item: FoodItem, travel: number, arrival: number): number
 {
-  if (isSpoiledAt(item, arrival)) {
-    return -travel;
-  }
-  // avoids dividing by zero when food is right under the raccoon
-  return (decayRate(item.food) * item.food.calories) / Math.max(travel, 1e-9);
+    if (isSpoiledAt(item, arrival)) {
+        return -travel;
+    }
+    // avoids dividing by zero when food is right under the raccoon
+    return (decayRate(item.food) * item.food.calories) / Math.max(travel, 1e-9);
 }
 
 /** One step of the greedy raccoon's thinking (recorded only for the animation). */
 export interface Decision {
-  fromX: number;
-  fromY: number;
-  candidates: number[];  // every item it looked at
-  chosen: number;
+    fromX: number;
+    fromY: number;
+    candidates: number[];  // every item it looked at
+    chosen: number;
 }
 
 export interface GreedyResult {
-  solution: Solution;
-  decisions: Decision[] | null;
+    solution: Solution;
+    decisions: Decision[] | null;
 }
 
-export function solve(inst: Instance, recordDecisions = false): GreedyResult {
-  const items = inst.items;
-  const decisions: Decision[] | null = recordDecisions ? [] : null;
+export function solve(inst: Problem, recordDecisions = false): GreedyResult {
+    const items = inst.items;
+    const decisions: Decision[] | null = recordDecisions ? [] : null;
 
-  let [hx, hy] = inst.start;                                   // [L1]
-  let clock = 0;                                               // [L2]
-  const remaining = items.map((it) => it.id);                  // [L3] (kept in id order)
-  const route: number[] = [];                                  // [L4]
+    let [hx, hy] = inst.start;                                         // [L1]
+    let clock = 0;                                                     // [L2]
+    const remaining = items.map((it) => it.id);                        // [L3] (kept in id order)
+    const route: number[] = [];                                        // [L4]
 
-  while (remaining.length > 0) {                               // [L5] runs n times
-    let best = -1;                                             // [L6]
-    let bestValue = -Infinity;                                 // [L7]
-    let bestIndex = -1;
-    let bestTravel = 0;
+    while (remaining.length > 0) {                                     // [L5] runs n times
+        let best = -1;                                                 // [L6]
+        let bestValue = -Infinity;                                     // [L7]
+        let bestIndex = -1;
+        let bestTravel = 0;
 
-    for (let k = 0; k < remaining.length; k++) {               // [L8]
-      const item = items[remaining[k]];
-      const travel = distance(hx, hy, item.x, item.y) / inst.speed; // [L9]
-      const value = attractiveness(item, travel, clock + travel); // [L10]
+        for (let k = 0; k < remaining.length; k++) {                   // [L8]
+            const item = items[remaining[k]];
+            const travel = distance(hx, hy, item.x, item.y) / inst.speed; // [L9]
+            const value = attractiveness(item, travel, clock + travel); // [L10]
 
-      if (value > bestValue) {                                 // [L11]
-        best = item.id;                                        // [L12]
-        bestValue = value;                                     // [L13]
-        bestIndex = k;
-        bestTravel = travel;                                   // [L14]
-      }
+            if (value > bestValue) {                                   // [L11]
+                best = item.id;                                        // [L12]
+                bestValue = value;                                     // [L13]
+                bestIndex = k;
+                bestTravel = travel;                                   // [L14]
+            }
+        }
+
+        if (decisions) {
+            decisions.push({ fromX: hx, fromY: hy, candidates: [...remaining], chosen: best });
+        }
+
+        clock += bestTravel;                                           // [L15] walk there and eat it
+        hx = items[best].x;                                            // [L16]
+        hy = items[best].y;                                            // [L16]
+        remaining.splice(bestIndex, 1);                                // [L17]
+        route.push(best);                                              // [L18]
     }
 
-    if (decisions) {
-      decisions.push({ fromX: hx, fromY: hy, candidates: [...remaining], chosen: best });
-    }
-
-    clock += bestTravel;                                       // [L15] walk there and eat it
-    hx = items[best].x;                                        // [L16]
-    hy = items[best].y;                                        // [L16]
-    remaining.splice(bestIndex, 1);                            // [L17]
-    route.push(best);                                          // [L18]
-  }
-
-  return { solution: evaluateRoute(inst, route, "greedy"), decisions }; // [L19]
+    return { solution: evaluateRoute(inst, route, "greedy"), decisions }; // [L19]
 }
