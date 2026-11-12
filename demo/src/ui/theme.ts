@@ -1,6 +1,7 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
 //  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-12 (Claude): Held-Karp color, set-size ramp for the DP table.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -34,9 +35,16 @@ export const COLORS = {
 };
 
 export const ALGORITHM_COLORS: Record<AlgorithmKey, string> = {
-    greedy: "#eb6834",   // orange
-    two_opt: "#2a78d6",  // blue
+    greedy: "#eb6834",       // orange
+    held_karp: "#2a78d6",    // blue
 };
+
+/**
+ * Sequential blue ramp (light -> dark) for Held-Karp's table: a cell is darker the
+ * more items its set holds. One hue, so it reads as "more", never as a new category.
+ */
+export const SET_SIZE_RAMP = ["#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",
+    "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95"];
 
 export type Shape = "diamond" | "hexagon" | "triangle" | "circle" | "pentagon";
 

@@ -25,7 +25,3 @@ export const FOOD_TYPES: FoodType[] = [
     { name: "apple",       calories: 95,  shelfLife: 600 },   // keeps for a while
     { name: "donut",       calories: 260, shelfLife: 900 },   // basically immortal
 ];
-
-// 2-opt local search (raccoon/config.py: TWO_OPT_MAX_SEGMENT, LOCAL_SEARCH_MAX_PASSES)
-export const TWO_OPT_MAX_SEGMENT = 50; // L: longest stretch 2-opt may reverse
-export const LOCAL_SEARCH_MAX_PASSES = 20; // P: safety cap on improvement passes

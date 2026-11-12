@@ -2,6 +2,7 @@
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
 //  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-03 (Claude): spoiled food is worth 0 calories.
+//  Updated 2026-11-12 (Claude): algorithm keys are now Greedy / Held-Karp.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -15,7 +16,10 @@
  *
  * where w = calories / shelfLife is the item's SPOIL WEIGHT (calories lost per
  * second while it is still fresh). This is a weighted Traveling Repairman
- * (minimum latency) problem whose costs stop growing at each shelf life.
+ * (minimum latency) problem whose costs stop growing at each shelf life. The
+ * unweighted, uncapped version (minimize the sum of arrival times) is the minimum
+ * latency problem of A. Blum et al., "The minimum latency problem", STOC 1994,
+ * pp. 163-171, doi:10.1145/195058.195125.
  *
  * NOTE on floating point: every formula below is written in the same order as
  * the Python, so both versions make identical decisions (see tests/parity.test.ts).
@@ -100,7 +104,7 @@ export const travelTime = (
     by: number,
 ): number => distance(ax, ay, bx, by) / inst.speed;
 
-export type AlgorithmKey = "greedy" | "two_opt";
+export type AlgorithmKey = "greedy" | "held_karp";
 
 /** A route through all food items plus everything we measured about it. */
 export interface Solution {

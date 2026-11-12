@@ -1,6 +1,7 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
 //  at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-12 (Claude): checks Greedy and Held-Karp against Python.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -10,14 +11,22 @@
 import { describe, expect, it } from "vitest";
 import * as config from "../src/core/config";
 import * as greedy from "../src/core/greedy";
-import { greedyKdRoute } from "../src/core/kdtree";
+import * as heldKarp from "../src/core/heldKarp";
 import type { Problem } from "../src/core/problem";
-import * as twoOpt from "../src/core/twoOpt";
 import fixtures from "./fixtures/python_routes.json";
 
+interface Case {
+    n: number;
+    seed: number;
+    items: { x: number; y: number; food: string }[];
+    greedy: { order: number[]; total_score: number };
+    held_karp?: { order: number[]; total_score: number; max_front: number };
+}
+
+const cases = fixtures.cases as Case[];
 const foodByName = new Map(config.FOOD_TYPES.map((f) => [f.name, f]));
 
-function toInstance(c: (typeof fixtures.cases)[number]): Problem {
+function toInstance(c: Case): Problem {
     return {
         items: c.items.map((it, id) => ({ id, x: it.x, y: it.y, food: foodByName.get(it.food)! })),
         start: config.DEN_POSITION,
@@ -29,7 +38,7 @@ function toInstance(c: (typeof fixtures.cases)[number]): Problem {
 }
 
 describe("config matches raccoon/config.py", () => {
-    it("has the same world, food types and 2-opt settings", () => {
+    it("has the same world and food types", () => {
         const py = fixtures.config;
         expect([config.MAP_WIDTH, config.MAP_HEIGHT]).toEqual(py.map);
         expect([...config.DEN_POSITION]).toEqual(py.den);
@@ -37,12 +46,10 @@ describe("config matches raccoon/config.py", () => {
         expect(config.FOOD_TYPES.map((f) => [f.name, f.calories, f.shelfLife]))
             .toEqual(py.food_types.map((f) => [f.name, f.calories, f.shelf_life]));
         expect(py.greedy_attractiveness).toBe("ratio");   // the only formula ported
-        expect(config.TWO_OPT_MAX_SEGMENT).toBe(py.two_opt_max_segment);
-        expect(config.LOCAL_SEARCH_MAX_PASSES).toBe(py.local_search_max_passes);
     });
 });
 
-describe.each(fixtures.cases.map((c) => [`n=${c.n} seed=${c.seed}`, c] as const))(
+describe.each(cases.map((c) => [`n=${c.n} seed=${c.seed}`, c] as const))(
     "same routes as Python on %s",
     (_label, c) => {
         const inst = toInstance(c);
@@ -53,14 +60,14 @@ describe.each(fixtures.cases.map((c) => [`n=${c.n} seed=${c.seed}`, c] as const)
             expect(solution.totalScore).toBeCloseTo(c.greedy.total_score, 6);
         });
 
-        it("Greedy (k-d tree)", () => {
-            expect(greedyKdRoute(inst)).toEqual(c.greedy_kd.order);
-        });
-
-        it("Greedy + 2-opt", () => {
-            const { solution } = twoOpt.solve(inst);
-            expect(solution.order).toEqual(c.two_opt.order);
-            expect(solution.totalScore).toBeCloseTo(c.two_opt.total_score, 6);
-        });
+        if (c.held_karp) {
+            const py = c.held_karp;
+            it("Held-Karp", () => {
+                const { solution, stats } = heldKarp.solve(inst);
+                expect(solution.order).toEqual(py.order);
+                expect(solution.totalScore).toBeCloseTo(py.total_score, 6);
+                expect(stats.maxFront).toBe(py.max_front);   // same labels kept
+            });
+        }
     },
 );

@@ -31,6 +31,15 @@ When can a label be thrown away?  ("A dominates B")
 
 Rule 2 is what keeps the lists short. (If nothing could ever spoil, Rule 2
 would leave exactly one label per cell: the classic Held-Karp table.)
+
+Sources (added 2026-11-12, Claude)
+----------------------------------
+Rule 1 is the standard dominance test of labeling DPs with a time resource, e.g.
+  Y. Dumas, J. Desrosiers, E. Gelinas, M. M. Solomon, "An optimal algorithm for
+  the traveling salesman problem with time windows", Operations Research
+  43(2):367-371, 1995. doi:10.1287/opre.43.2.367
+Rule 2 is our own, derived above for this scoring rule (not from a paper);
+tests/test_algorithms.py checks the DPs against an exhaustive search.
 """
 from __future__ import annotations
 
