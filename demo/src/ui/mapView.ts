@@ -1,6 +1,7 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
 //  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  Updated 2026-11-12 (Claude): Held-Karp planning replay replaces the 2-opt replay.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -10,8 +11,8 @@
  * Both are pure functions of their argument, so the timeline can be scrubbed freely.
  */
 import type { Decision } from "../core/greedy";
+import type { Snapshot } from "../core/heldKarp";
 import { freshnessAt, type AlgorithmKey, type Problem, type Solution } from "../core/problem";
-import { reverse, type Move } from "../core/twoOpt";
 import { ALGORITHM_COLORS, COLORS, fitCanvas, foodStyle, STALE_BELOW, traceShape } from "./theme";
 
 export interface PanelData {
@@ -19,17 +20,12 @@ export interface PanelData {
     instance: Problem;
     solution: Solution;
     decisions?: Decision[] | null;   // Greedy: what it looked at each step
-    startRoute?: number[];           // 2-opt: the Greedy route it started from
-    moves?: Move[] | null;           // 2-opt: every accepted reversal
+    snapshots?: Snapshot[] | null;   // Held-Karp: best partial routes as its table fills
 }
 
 // Detail switches by map size (things that turn into noise on busy maps)
 const SHOW_ORDER_MAX_N = 40;         // number each eaten item
 const SHOW_FRESHNESS_MAX_N = 60;     // little freshness bar under each item
-const SHOW_PLAN_MAX_N = 250;         // 2-opt: dashed line of the rest of its plan
-
-/** How the 2-opt planning replay splits its bar: first build Greedy's route, then flip. */
-export const PLAN_BUILD_FRACTION = 0.15;
 
 export class MapView {
     private ctx!: CanvasRenderingContext2D;
@@ -38,9 +34,6 @@ export class MapView {
     private data: PanelData | null = null;
     private eatenAt = new Float64Array(0);   // item id -> arrival time
     private rank = new Int32Array(0);        // item id -> position in the route
-    // 2-opt replay cache
-    private replayRoute: number[] = [];
-    private replayApplied = 0;
 
     constructor(private readonly canvas: HTMLCanvasElement) {}
 
@@ -53,8 +46,6 @@ export class MapView {
             this.eatenAt[id] = data.solution.arrivalTimes[k];
             this.rank[id] = k;
         });
-        this.replayRoute = [...(data.startRoute ?? [])];
-        this.replayApplied = 0;
     }
 
     resize(): void {
@@ -84,48 +75,28 @@ export class MapView {
             return;
         }
         this.clear();
+        let lit: number | null = null;   // bitmask of items to draw at full strength (null = all)
 
-        if (d.key === "two_opt" && d.startRoute && d.moves) {
-            // Replay: first draw Greedy's route appearing, then apply the recorded flips.
-            const build = Math.min(1, progress / PLAN_BUILD_FRACTION);
-            const flips = progress <= PLAN_BUILD_FRACTION ? 0
-                : Math.round(((progress - PLAN_BUILD_FRACTION) / (1 - PLAN_BUILD_FRACTION)) * d.moves.length);
-            const route = this.replayTo(flips);
-            const shown = Math.ceil(build * route.length);
-            this.strokeRoute(route.slice(0, shown), COLORS.inkSecondary, 1.25, 0.55);
-            if (flips > 0 && progress < 1) {
-                const [i, j] = d.moves[flips - 1];
-                // highlight the stretch that was just reversed (plus the legs into/out of it)
-                const lo = Math.max(0, i - 1);
-                const seg = route.slice(lo, Math.min(route.length, j + 2));
-                this.strokeRoute(seg, ALGORITHM_COLORS.two_opt, 3, 1, i === 0);
-            } else if (progress >= 1) {
-                this.strokeRoute(route, ALGORITHM_COLORS.two_opt, 2, 0.9);
+        if (d.key === "held_karp" && d.snapshots && d.snapshots.length > 0) {
+            if (progress >= 1) {
+                this.strokeRoute(d.solution.order, ALGORITHM_COLORS.held_karp, 2, 0.9);
+            } else {
+                // the newest finished table row: the cheapest way found so far to eat set S
+                const frame = MapView.snapshotAt(d.snapshots, progress);
+                if (frame) {
+                    lit = frame.set;
+                    this.strokeRoute(frame.route, ALGORITHM_COLORS.held_karp, 2, 0.85);
+                }
             }
         }
-        this.drawItems(0, false);
+        this.drawItems(0, false, lit);
         this.drawDen();
     }
 
-    /** How many 2-opt flips the replay is showing at this progress (for the caption). */
-    static flipsAt(progress: number, totalMoves: number): number {
-        if (progress <= PLAN_BUILD_FRACTION) {
-            return 0;
-        }
-        return Math.round(((progress - PLAN_BUILD_FRACTION) / (1 - PLAN_BUILD_FRACTION)) * totalMoves);
-    }
-
-    private replayTo(count: number): number[] {
-        const d = this.data!;
-        if (count < this.replayApplied) {
-            this.replayRoute = [...d.startRoute!];
-            this.replayApplied = 0;
-        }
-        while (this.replayApplied < count) {
-            const [i, j] = d.moves![this.replayApplied++];
-            reverse(this.replayRoute, i, j);
-        }
-        return this.replayRoute;
+    /** The planning-animation frame shown at this progress (null before the first one). */
+    static snapshotAt(snapshots: readonly Snapshot[], progress: number): Snapshot | null {
+        const k = Math.floor(progress * snapshots.length);
+        return k <= 0 ? null : snapshots[Math.min(snapshots.length, k) - 1];
     }
 
     // ---------------------------------------------------------------------------
@@ -161,12 +132,12 @@ export class MapView {
             ctx.restore();
         }
 
-        // 2-opt planned ahead: dashed line through the rest of its route
-        if (d.key === "two_opt" && k < n && n <= SHOW_PLAN_MAX_N) {
+        // Held-Karp planned ahead: dashed line through the rest of its route
+        if (d.key === "held_karp" && k < n) {
             const ctx = this.ctx;
             ctx.save();
             ctx.setLineDash([3, 4]);
-            ctx.strokeStyle = ALGORITHM_COLORS.two_opt;
+            ctx.strokeStyle = ALGORITHM_COLORS.held_karp;
             ctx.globalAlpha = 0.45;
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -222,7 +193,8 @@ export class MapView {
         ctx.strokeRect(this.pad - 0.5, this.pad - 0.5, this.size - 2 * this.pad + 1, this.size - 2 * this.pad + 1);
     }
 
-    private drawItems(t: number, walking: boolean): void {
+    /** Draw every food item. `lit` (planning only): bitmask of items to draw strongly; the rest fade. */
+    private drawItems(t: number, walking: boolean, lit: number | null = null): void {
         const d = this.data!;
         const ctx = this.ctx;
         const n = d.instance.items.length;
@@ -253,6 +225,8 @@ export class MapView {
                 continue;
             }
 
+            const faded = lit !== null && !((lit >> it.id) & 1);
+            ctx.globalAlpha = faded ? 0.3 : 1;
             traceShape(ctx, style.shape, x, y, r);
             ctx.fillStyle = fresh <= 0 ? COLORS.rottenFood : style.color;   // spoiled = worth 0
             ctx.fill();
@@ -277,6 +251,7 @@ export class MapView {
                     ctx.fillRect(bx, by, w * fresh, h);
                 }
             }
+            ctx.globalAlpha = 1;
         }
     }
 

@@ -339,3 +339,87 @@ The benchmark now runs it for n = 2..15, and the full benchmark takes about 9 mi
   changes Greedy's routes everywhere, including on the website.
 - **The top-level `README.md` (the group's own text) still says "The score is decreased if the item is
   spoiled."** It was not edited by the AI, so update it to match the new rule.
+
+---
+
+## Session 5 - 2026-11-12: website switched to Greedy vs. Held-Karp
+
+Requested by George Rule: "switch back to Held-Karp and Greedy, code that up and make sure the site
+has good visualizations that show how Held-Karp is asymptotically better in either calories saved or
+something. Use the well known published solutions/pseudocode."
+
+Follow-up the same day: "remove brute force, we just need greedy and held karp, also make sure to
+comment and cite in the code." Brute force was removed from the website (code, charts, tests,
+fixtures), and every algorithm file now has a References block with DOIs.
+
+The Python algorithms were **not** changed in behavior. Only a Sources section was added to the
+`pareto.py` docstring. `ai-claude/raccoon/algorithms/brute_force.py` is still there: the Python tests
+use it to prove Held-Karp is optimal, and it is not part of the website. Everything else is in `demo/`.
+
+### What was added or changed in `demo/`
+
+- `src/core/heldKarp.ts`, `src/core/pareto.ts`: TypeScript port of the Python Held-Karp (with its
+  (time, loss) labels). Same order of operations as the Python, so it picks **identical routes**; the
+  parity tests check order, score and label count F.
+- `src/core/scaling.ts`: the "How they scale" study. 20 fixed-seed maps per size n = 2..14 (10 timed),
+  Greedy also timed on n = 100..1,500, and least-squares fits of `a·f(n) + b` for each Θ bound.
+- `src/ui/scatterChart.ts`, `src/ui/workView.ts`: the scaling charts, and the strip under each race map
+  (Greedy's n(n+1)/2 comparisons vs. Held-Karp's 2ⁿ table rows).
+- `src/ui/mapView.ts`: while Held-Karp plans, its map shows the cheapest partial route found so far
+  for the set of items being filled in (read from the finished table, so it never changes the answer).
+- `index.html`, `src/main.ts`, `src/style.css`: race panels for Greedy and Held-Karp (n = 2..16), the new
+  "How they scale" section, and Held-Karp pseudocode in the published recurrence's form.
+- Removed from the site: `src/core/twoOpt.ts`, `src/core/kdtree.ts` and the 2-opt settings in
+  `src/core/config.ts`. (The Python 2-opt in `ai-claude/` is untouched.)
+- Tests and fixtures: `scripts/export_fixtures.py` now exports Greedy and Held-Karp (n <= 14) routes.
+  New tests: Held-Karp never beaten by random orders, cell counts (n·2ⁿ⁻¹, s·C(n, s) per set size),
+  snapshot validity, trendline-fit recovery.
+- Citations: `greedy.ts` (Rosenkrantz, Stearns & Lewis 1977; Smith 1956), `heldKarp.ts` (Held & Karp
+  1962; Bellman 1962; Dumas et al. 1995; Blum et al. 1994), `pareto.ts` (Dumas et al. 1995; Rule 2
+  marked as our own), `problem.ts` (Blum et al. 1994), and the page's reference list. Lines the AI
+  added to the team-edited `greedy.ts` are tagged `[EDIT: Claude]`.
+
+### What the charts show (AI's sandbox, Node 22; your browser will differ on times, not on calories)
+
+The calorie numbers depend only on the fixed maps, so every browser shows exactly these:
+
+| n | Held-Karp's lead over Greedy (mean of 20 maps) | Share of all the food | Maps where Greedy was optimal |
+|---|---|---|---|
+| 2 | 1.6 cal | 0.4% | 95% |
+| 8 | 35 cal | 2.1% | 30% |
+| 14 | 191 cal | 6.6% | 0% |
+
+- Planning time: Greedy is always faster; Held-Karp doubles (and a bit) with every extra item.
+- Fits: R² ≈ 0.99 for Greedy (n²) and Held-Karp (n²·2ⁿ).
+
+### Decisions the AI made that the group should review
+
+- **What "asymptotically better" means here.** Held-Karp is *not* faster than Greedy: Θ(n²·2ⁿ) vs. Θ(n²).
+  The site argues it on quality: Greedy's calorie shortfall grows with n and its chance of being
+  optimal drops to 0. Be ready to explain this in the Q&A; the project spec asks for the clever
+  algorithm to "asymptotically outperform" the straightforward one, so consider checking this framing
+  with the professor.
+- **Held-Karp's labels.** The published Held-Karp keeps one number per cell. Because spoiled food stops
+  losing calories, our cell keeps a short list of (time, loss) labels, the two-dimensional labeling of
+  Dumas et al. (1995) for TSP with time windows. Rule 2 in `pareto.ts` (a later label can still win if it
+  is cheap enough) is the AI's own addition, not from a paper; it keeps the lists about 40% shorter.
+  Both rules are exact (the Python tests check the DP against an exhaustive search).
+- Timing in the scaling section pauses the race animation while it runs, and starts automatically
+  when the section scrolls into view (about 10 seconds).
+
+### Sources added (verified to exist)
+
+- M. Held and R. M. Karp, "A dynamic programming approach to sequencing problems", J. SIAM 10(1):196–210,
+  1962. doi:10.1137/0110015
+- R. Bellman, "Dynamic programming treatment of the travelling salesman problem", J. ACM 9(1):61–63, 1962.
+  doi:10.1145/321105.321111
+- Y. Dumas, J. Desrosiers, E. Gelinas, M. M. Solomon, "An optimal algorithm for the traveling salesman
+  problem with time windows", Operations Research 43(2):367–371, 1995. doi:10.1287/opre.43.2.367
+- D. J. Rosenkrantz, R. E. Stearns, P. M. Lewis II, "An analysis of several heuristics for the traveling
+  salesman problem", SIAM J. Computing 6(3):563–581, 1977. doi:10.1137/0206041
+
+### Checks run in the AI's sandbox
+
+`tsc` strict type-check passes; all demo tests pass (Node 22 with a small vitest stand-in, because npm
+packages could not be downloaded there); the page was bundled and checked in Chromium with no console
+errors. **Run `npm install` and `npm test` once yourselves.**

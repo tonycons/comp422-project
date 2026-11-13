@@ -30,6 +30,23 @@
  *
  * Running time Theta(n^2): lines 9-14 run n + (n-1) + ... + 1 = n(n+1)/2 times.
  * Memory Theta(n).
+ *
+ * Correctness: always a valid route (each pass of line 5 moves exactly one item from
+ * `remaining` to `route`), but NOT always optimal: it never looks past the next meal.
+ *
+ * References                                                          [EDIT: Claude]
+ *  - The loop is the "nearest neighbor" construction heuristic for the traveling
+ *    salesman problem, analysed (Theta(n^2) time, no constant-factor guarantee) in
+ *    D. J. Rosenkrantz, R. E. Stearns, P. M. Lewis II, "An analysis of several heuristics
+ *    for the traveling salesman problem", SIAM J. Computing 6(3):563-581, 1977.
+ *    doi:10.1137/0206041
+ *  - Our ATTRACTIVENESS (calories lost per second / seconds of travel) is Smith's
+ *    weight-over-processing-time ratio rule: W. E. Smith, "Various optimizers for
+ *    single-stage production", Naval Research Logistics Quarterly 3(1-2):59-66, 1956.
+ *    doi:10.1002/nav.3800030106. It is optimal when job times do not depend on the order;
+ *    here travel times do (they depend on where the raccoon stands), so it is a heuristic.
+ *  - TypeScript port of ai-claude/raccoon/algorithms/greedy.py; the [Lx] tags below
+ *    match the pseudocode line numbers above.
  */
 import { decayRate, distance, evaluateRoute, isSpoiledAt, type FoodItem, type Problem, type Solution } from "./problem";
 
@@ -47,8 +64,10 @@ export const INFO = {
  * At the basic level, attractiveness is a calories-to-distance ratio. Highest calories at the shortest distance is the
  * most attractive. Then, the decay rate is added as a multiplier, which makes rapidly decaying items more "attractive"
  * in the sense that they must be consumed more urgently.
+ * (decay rate x calories = calories lost per second while fresh, so this is Smith's 1956 ratio rule.) [EDIT: Claude]
+ * Spoiled-on-arrival food returns -travel: below every fresh item (all > 0), nearest first.          [EDIT: Claude]
  * @param item The food item
- * @param travel The distance to the food item
+ * @param travel The travel time (seconds) to the food item; equals the distance at speed 1 m/s   [EDIT: Claude]
  * @param arrival The arrival time upon reaching the food item
  */
 export function attractiveness(item: FoodItem, travel: number, arrival: number): number

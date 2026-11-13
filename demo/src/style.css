@@ -1,6 +1,7 @@
 /* =============================================================================
    AI-GENERATED FILE - written by Claude (Anthropic AI), 2026-11-03,
    at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+   Updated 2026-11-12 (Claude): Held-Karp colors, work strips, "How they scale" section.
    Human edits: please tag changed lines with   [EDIT: <your name>]
    ============================================================================= */
 
@@ -16,7 +17,7 @@
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.1);
   --greedy: #eb6834;
-  --two_opt: #2a78d6;
+  --held_karp: #2a78d6;
   --accent: #2a78d6;
   --radius: 10px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -39,6 +40,9 @@ code, pre { font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consol
 .eyebrow { margin: 0 0 6px; color: var(--ink-2); font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .lede { max-width: 78ch; color: var(--ink-2); font-size: 1.04rem; margin: 12px 0 0; }
 .lede strong { color: var(--ink); }
+.jump { display: flex; gap: 16px; margin-top: 12px; font-size: 0.88rem; }
+.jump a { color: var(--ink-2); text-underline-offset: 3px; }
+.jump a:hover { color: var(--ink); }
 
 /* An algorithm name with its color as a short line key (text stays ink-colored) */
 .algo-key { white-space: nowrap; font-weight: 600; color: var(--ink); }
@@ -47,7 +51,7 @@ code, pre { font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consol
   margin: 0 6px 0.28em 0; vertical-align: middle; background: var(--algo-color);
 }
 [data-algo="greedy"] { --algo-color: var(--greedy); }
-[data-algo="two_opt"] { --algo-color: var(--two_opt); }
+[data-algo="held_karp"] { --algo-color: var(--held_karp); }
 
 /* ---------------------------------------------------------------- controls */
 .controls {
@@ -101,7 +105,12 @@ select { width: auto; }
 .plan { display: grid; gap: 4px; }
 .plan-bar { height: 8px; border-radius: 99px; background: var(--grid); overflow: hidden; }
 .plan-bar > i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--algo-color); }
-.plan-caption { font-size: 0.8rem; color: var(--ink-2); min-height: 1.2em; }
+.plan-caption { font-size: 0.8rem; color: var(--ink-2); min-height: 2.4em; }
+
+/* the "work" strip under each map: Greedy's comparisons, Held-Karp's table */
+.work { display: grid; gap: 4px; }
+.work-canvas { width: min(100%, 440px); align-self: center; justify-self: center; display: block; }
+.work-caption { min-height: 2.4em; }
 
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0; }
 .stats div { min-width: 0; }
@@ -147,6 +156,34 @@ td { font-variant-numeric: tabular-nums; }
 .routes .group-start { border-left: 1px solid var(--grid); }
 .neg { color: #b02a2a; }
 details summary { cursor: pointer; color: var(--ink-2); font-size: 0.9rem; margin-top: 12px; }
+
+/* ---------------------------------------------------------------- how they scale */
+.scaling { margin-top: 34px; }
+.section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px 28px; flex-wrap: wrap; margin-bottom: 14px; }
+.section-head h2 { font-size: 1.35rem; margin-bottom: 6px; }
+.section-lede { margin: 0; max-width: 78ch; color: var(--ink-2); }
+.section-lede strong { color: var(--ink); }
+.run-box { display: grid; gap: 6px; width: 260px; }
+.run-box .btn { justify-self: start; }
+.progress { height: 6px; border-radius: 99px; background: var(--grid); overflow: hidden; }
+.progress > i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 99px; }
+
+.tiles { list-style: none; padding: 0; margin: 0 0 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 2px; }
+.tile strong { font-size: 1.7rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--ink); font-size: 0.9rem; }
+.tile small { color: var(--ink-muted); font-size: 0.8rem; }
+
+.chart-grid { display: grid; gap: 16px; margin-bottom: 18px; }
+.chart-grid.two { grid-template-columns: 1fr 1fr; }
+.chart-grid > .card { margin-bottom: 0; }
+@media (max-width: 900px) { .chart-grid.two { grid-template-columns: 1fr; } }
+.chart-card { margin: 0 0 18px; min-width: 0; }
+.chart-card figcaption h3 { margin-bottom: 2px; }
+.chart-card figcaption .help { margin: 0 0 8px; display: block; }
+.chart-card .card-head { align-items: flex-start; }
+.tip-fit { color: var(--ink-muted); font-size: 0.78rem; margin: 0 0 4px 22px; }
+.note { max-width: 90ch; }
 
 /* ---------------------------------------------------------------- about */
 .about h2 { margin: 28px 0 12px; }
