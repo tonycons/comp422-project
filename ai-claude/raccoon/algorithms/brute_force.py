@@ -7,8 +7,8 @@
 REFERENCE ONLY: Brute force (try every possible order)
 ======================================================
 
-Not one of our two main algorithms. It exists to PROVE Held-Karp is right:
-the tests check that Held-Karp's score equals the brute-force best on small
+Not one of our two main algorithms. It exists to PROVE Subset DP is right:
+the tests check that Subset DP's score equals the brute-force best on small
 random maps. It can also be benchmarked (python main.py benchmark --only
 brute_force) if you want to show why nobody does this.
 

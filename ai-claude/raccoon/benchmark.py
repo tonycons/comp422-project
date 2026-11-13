@@ -11,7 +11,7 @@ For every algorithm and every size n in config.BENCHMARK_SIZES:
   * measure the CPU time (time.process_time) of solving each one,
   * write one row per instance to  results/runtime_<algorithm>.csv.
 
-It also writes results/quality.csv: for every Held-Karp instance, how good the
+It also writes results/quality.csv: for every Subset DP instance, how good the
 greedy route was compared with the optimal one.
 """
 from __future__ import annotations
@@ -109,7 +109,7 @@ def run_benchmark(keys: Iterable[str] = BENCHMARK_ALGORITHMS, quick: bool = Fals
                              "cpu_seconds": f"{seconds:.9f}", "repeats": repeats,
                              "score": f"{solution.total_score:.3f}",
                              "spoiled": solution.spoiled_count})
-                if key == "held_karp":
+                if key == "subset_dp":
                     # Same instance, greedy route: how close to optimal is it?
                     g = greedy.solve(instance)
                     ratio = (g.spoilage_loss / solution.spoilage_loss

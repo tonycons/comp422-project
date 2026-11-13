@@ -4,10 +4,12 @@
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * CLEVER ALGORITHM: Held-Karp dynamic programming
- * (TypeScript port of ai-claude/raccoon/algorithms/held_karp.py -- same decisions, same [Lx] tags)
+ * CLEVER ALGORITHM: Subset DP (subset dynamic programming with label dominance)
+ * (TypeScript port of ai-claude/raccoon/algorithms/subset_dp.py -- same decisions, same [Lx] tags)
  *
- * The classic Held-Karp table (Held & Karp 1962; Bellman 1962):
+ * The (set, last item) table of Held & Karp (1962) and Bellman (1962), which Wu, Huang &
+ * Zhan (2004) and Roberti & Mingozzi (2014) use to solve the traveling repairman
+ * (minimum latency / delivery man) problem exactly:
  *
  *     C(S, j) = cheapest way to eat exactly the items in set S, eating j last
  *     C({j}, j) = cost of walking straight from the den to j
@@ -20,10 +22,12 @@
  * so what it costs to finish the route depends on the CLOCK, not just on which items
  * are left. A cell therefore keeps a short list of (time, loss) "labels" instead of one
  * number, and drops a label only when another one is at least as good on both counts
- * (dominance rules: see pareto.ts). If food never spoiled, each list would shrink
- * to exactly one label and this would be the textbook table.
+ * (dominance rules: see pareto.ts). Tsitsiklis (1992) does the same for repairman
+ * problems: "a dynamic programming algorithm has to keep track of both time and waiting
+ * time". If food never spoiled, each list would shrink to exactly one label and this
+ * would be the one-value-per-cell table of Wu et al.
  *
- *     HELD-KARP-RACCOON(items, den, speed)
+ *     SUBSET-DP-RACCOON(items, den, speed)
  *      1  T[i][j] = travel time i -> j for every pair;  T0[j] = travel time den -> j
  *      2  for each item j:  C[{j}][j] = { (T0[j], loss_j(T0[j])) }
  *      3  for each subset S, smallest first (|S| >= 2)
@@ -50,28 +54,45 @@
  * the SAME cell does at least as well however the route is finished (pareto.ts). So the
  * best finished label on line 10 is the best of all n! orders.
  *
- * References
+ * References (updated 2026-11-13, Claude: sources that cover the REPAIRMAN problem, read
+ * from the group's scientific_sources/ folder; Held & Karp's 1962 DP is a TSP algorithm)
+ *  - B. Y. Wu, Z.-N. Huang, F.-J. Zhan, "Exact algorithms for the minimum latency
+ *    problem", Information Processing Letters 92(6):303-309, 2004.
+ *    doi:10.1016/j.ipl.2004.09.009   (Section 3.1: the O(n^2 * 2^n) DP over
+ *    "configurations" (visited set, last vertex) for the repairman objective: our C(S, j))
+ *  - R. Roberti and A. Mingozzi, "Dynamic ng-path relaxation for the delivery man
+ *    problem", Transportation Science 48(3):413-424, 2014. doi:10.1287/trsc.2013.0474
+ *    (Section 2: the same recursion F(S, i), "a well-known DP recursion"; Section 5: an
+ *    exact method that adds "standard dominance rules")
+ *  - J. N. Tsitsiklis, "Special cases of traveling salesman and repairman problems with
+ *    time windows", Networks 22(3):263-282, 1992. doi:10.1002/net.3230220305
+ *    (Section VIII, Theorems 8-9: forward DP over states (i, S) that propagates labels
+ *    and tracks both time and accumulated waiting time: why a cell keeps a label list)
+ *  - J. Pei, N. Mladenovic, D. Urosevic, J. Brimberg, X. Liu, "Solving the traveling
+ *    repairman problem with profits: A novel variable neighborhood search approach",
+ *    Information Sciences 507:108-123, 2020. doi:10.1016/j.ins.2019.08.017
+ *    (Section 2.1 defines the problem ours is a weighted version of: profit p - t if
+ *    p > t, else 0; our score is w * max(0, shelfLife - t). A heuristics paper: it
+ *    supports the problem, not this algorithm.)
  *  - M. Held and R. M. Karp, "A dynamic programming approach to sequencing problems",
  *    J. Society for Industrial and Applied Mathematics 10(1):196-210, 1962.
- *    doi:10.1137/0110015   (the C(S, j) recurrence and its O(n^2 * 2^n) bound)
+ *    doi:10.1137/0110015   (origin of the (set, last) table, for the TSP)
  *  - R. Bellman, "Dynamic programming treatment of the travelling salesman problem",
- *    J. ACM 9(1):61-63, 1962. doi:10.1145/321105.321111   (the same DP, found independently)
- *  - Y. Dumas, J. Desrosiers, E. Gelinas, M. M. Solomon, "An optimal algorithm for the
- *    traveling salesman problem with time windows", Operations Research 43(2):367-371,
- *    1995. doi:10.1287/opre.43.2.367   (DP whose states carry (time, cost) labels with
- *    dominance tests: the idea behind keeping a label list per cell)
+ *    J. ACM 9(1):61-63, 1962. doi:10.1145/321105.321111   (the same table, independently)
  *  - A. Blum, P. Chalasani, D. Coppersmith, B. Pulleyblank, P. Raghavan, M. Sudan,
  *    "The minimum latency problem", STOC 1994, 163-171. doi:10.1145/195058.195125
- *    (the sum-of-arrival-times objective our scoring is a weighted, capped version of)
- *  - TypeScript port of ai-claude/raccoon/algorithms/held_karp.py; the [Lx] tags below
+ *    (the sum-of-arrival-times objective)
+ *  Not from any of these: dominance Rule 2 (pareto.ts), the per-item weights, and the
+ *  O(n^2 * 2^n * F) bound with label lists are our own.
+ *  - TypeScript port of ai-claude/raccoon/algorithms/subset_dp.py; the [Lx] tags below
  *    match the pseudocode line numbers above.
  */
 import { paretoFront, liveWeightFunction } from "./pareto";
 import { distance, evaluateRoute, type Problem, type Solution } from "./problem";
 
 export const INFO = {
-    key: "held_karp" as const,
-    name: "Held-Karp",
+    key: "subset_dp" as const,
+    name: "Subset DP",
     tagline: "plans the whole route before leaving",
     timeComplexity: "Θ(n²·2ⁿ)",
     memoryComplexity: "Θ(n·2ⁿ)",
@@ -89,7 +110,7 @@ export interface Label {
 }
 
 /** Counts recorded for the planning animation and the "work done" charts. */
-export interface HeldKarpStats {
+export interface SubsetDpStats {
     cells: number;              // (S, j) cells filled = n * 2^(n-1)
     labelsKept: number;         // labels stored over the whole table
     candidates: number;         // labels built on line 8 (the real work)
@@ -104,9 +125,9 @@ export interface Snapshot {
     route: number[];    // its best partial route (item ids, den first)
 }
 
-export interface HeldKarpResult {
+export interface SubsetDpResult {
     solution: Solution;
-    stats: HeldKarpStats;
+    stats: SubsetDpStats;
     snapshots: Snapshot[] | null;   // only when asked for (it is for the animation, not the answer)
 }
 
@@ -115,15 +136,15 @@ export interface HeldKarpResult {
  *                   for set S" frames for the planning animation (read from the
  *                   finished table, so they never change the answer).
  */
-export function solve(inst: Problem, snapshots = 0): HeldKarpResult {
+export function solve(inst: Problem, snapshots = 0): SubsetDpResult {
     const items = inst.items;
     const n = items.length;
     if (n > MAX_N) {
-        throw new Error(`Held-Karp needs 2^n memory; n = ${n} is above the limit of ${MAX_N}`);
+        throw new Error(`Subset DP needs 2^n memory; n = ${n} is above the limit of ${MAX_N}`);
     }
     if (n === 0) {
         return {
-            solution: evaluateRoute(inst, [], "held_karp"),
+            solution: evaluateRoute(inst, [], "subset_dp"),
             stats: { cells: 0, labelsKept: 0, candidates: 0, maxFront: 0, cellsBySize: [0], bestLoss: 0 },
             snapshots: snapshots > 0 ? [] : null,
         };
@@ -148,7 +169,7 @@ export function solve(inst: Problem, snapshots = 0): HeldKarpResult {
     const EMPTY: Label[] = [];
     table.fill(EMPTY);
 
-    const stats: HeldKarpStats = {
+    const stats: SubsetDpStats = {
         cells: 0, labelsKept: 0, candidates: 0, maxFront: 1,
         cellsBySize: new Array(n + 1).fill(0), bestLoss: 0,
     };
@@ -242,7 +263,7 @@ export function solve(inst: Problem, snapshots = 0): HeldKarpResult {
         }
     }
 
-    return { solution: evaluateRoute(inst, route, "held_karp"), stats, snapshots: frames };   // [L12]
+    return { solution: evaluateRoute(inst, route, "subset_dp"), stats, snapshots: frames };   // [L12]
 }
 
 /** Lines 10-11 for any set S: its cheapest label over every last item, then the back-pointers. */

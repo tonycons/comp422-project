@@ -10,7 +10,7 @@ Uses only Python's built-in `unittest`, so nothing extra to install.
 """
 import unittest
 
-from raccoon.algorithms import brute_force, greedy, held_karp
+from raccoon.algorithms import brute_force, greedy, subset_dp
 from raccoon.generator import generate_instance
 from raccoon.problem import FoodItem, FoodType, Instance, evaluate_route
 
@@ -57,35 +57,35 @@ class TestScoring(unittest.TestCase):
             evaluate_route(inst, [0], "bad")
 
 
-class TestHeldKarp(unittest.TestCase):
+class TestSubsetDp(unittest.TestCase):
     def test_matches_brute_force_on_random_maps(self):
-        """Held-Karp must find the true optimum (n = 1..8, many random maps)."""
+        """Subset DP must find the true optimum (n = 1..8, many random maps)."""
         for n in range(1, 9):
             for seed in range(12):
                 inst = generate_instance(n, seed=seed)
-                hk = held_karp.solve(inst)
+                dp = subset_dp.solve(inst)
                 bf = brute_force.solve(inst)
-                self.assertAlmostEqual(hk.total_score, bf.total_score, places=6,
+                self.assertAlmostEqual(dp.total_score, bf.total_score, places=6,
                                        msg=f"n={n} seed={seed}")
 
     def test_dp_cost_equals_real_spoilage(self):
         """The DP's best loss equals the real spoilage of the route it returns."""
         for seed in range(10):
             inst = generate_instance(9, seed=seed)
-            hk = held_karp.solve(inst)
-            self.assertAlmostEqual(hk.notes["dp_min_cost"], hk.spoilage_loss, places=6)
+            dp = subset_dp.solve(inst)
+            self.assertAlmostEqual(dp.notes["dp_min_cost"], dp.spoilage_loss, places=6)
 
     def test_never_worse_than_greedy(self):
         for seed in range(20):
             inst = generate_instance(10, seed=seed)
-            self.assertGreaterEqual(held_karp.solve(inst).total_score + 1e-9,
+            self.assertGreaterEqual(subset_dp.solve(inst).total_score + 1e-9,
                                     greedy.solve(inst).total_score)
 
     def test_edge_cases(self):
-        self.assertEqual(held_karp.solve(tiny_instance([])).order, [])
-        self.assertEqual(held_karp.solve(tiny_instance([(1, 1)])).order, [0])
+        self.assertEqual(subset_dp.solve(tiny_instance([])).order, [])
+        self.assertEqual(subset_dp.solve(tiny_instance([(1, 1)])).order, [0])
         # several items in the same spot must not break anything
-        sol = held_karp.solve(tiny_instance([(2, 2), (2, 2), (5, 5)]))
+        sol = subset_dp.solve(tiny_instance([(2, 2), (2, 2), (5, 5)]))
         self.assertEqual(sorted(sol.order), [0, 1, 2])
 
 

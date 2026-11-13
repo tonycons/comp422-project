@@ -20,6 +20,13 @@
  * unweighted, uncapped version (minimize the sum of arrival times) is the minimum
  * latency problem of A. Blum et al., "The minimum latency problem", STOC 1994,
  * pp. 163-171, doi:10.1145/195058.195125.
+ * A cost that stops growing is the Traveling Repairman Problem with Profits: profit
+ * p_i - t_i if p_i > t_i, else 0 (J. Pei et al., "Solving the traveling repairman problem
+ * with profits: A novel variable neighborhood search approach", Information Sciences
+ * 507:108-123, 2020, doi:10.1016/j.ins.2019.08.017, Section 2.1). Our score is
+ * w_i * max(0, shelfLife_i - t_i): the same with p_i = shelf life, plus a weight w_i.
+ * (There the repairman may skip nodes; ours must eat everything, which gives the same
+ * best score because spoiled items can be left for last.)
  *
  * NOTE on floating point: every formula below is written in the same order as
  * the Python, so both versions make identical decisions (see tests/parity.test.ts).
@@ -104,7 +111,7 @@ export const travelTime = (
     by: number,
 ): number => distance(ax, ay, bx, by) / inst.speed;
 
-export type AlgorithmKey = "greedy" | "held_karp";
+export type AlgorithmKey = "greedy" | "subset_dp";
 
 /** A route through all food items plus everything we measured about it. */
 export interface Solution {

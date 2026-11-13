@@ -9,13 +9,13 @@
  */
 import { generateInstance } from "./generator";
 import * as greedy from "./greedy";
-import * as heldKarp from "./heldKarp";
+import * as subsetDp from "./subsetDp";
 import type { Problem } from "./problem";
 
 /** Greedy's "thinking lines" are only drawn on maps this small (they'd be a blur above). */
 export const RECORD_DECISIONS_MAX_N = 60;
 
-/** Frames of Held-Karp's table the planning animation steps through. */
+/** Frames of Subset DP's table the planning animation steps through. */
 export const SNAPSHOTS = 90;
 
 /** Re-run quick solves until this much time passes, for an accurate per-run time. */
@@ -25,7 +25,7 @@ const MAX_REPEATS = 2000;
 export interface Race {
     instance: Problem;
     greedy: greedy.GreedyResult & { ms: number };
-    heldKarp: heldKarp.HeldKarpResult & { ms: number };
+    subsetDp: subsetDp.SubsetDpResult & { ms: number };
 }
 
 /**
@@ -51,11 +51,11 @@ export function makeRace(n: number, seed: number): Race {
     const instance = generateInstance(n, seed);
     // Timed runs record nothing extra; the untimed runs below keep the animation data.
     const greedyMs = timeIt(() => greedy.solve(instance));
-    // On big maps one Held-Karp run already takes long enough to time; skip its warm-up there.
-    const hkMs = timeIt(() => heldKarp.solve(instance), MIN_TIMED_MS, n < 13);
+    // On big maps one Subset DP run already takes long enough to time; skip its warm-up there.
+    const dpMs = timeIt(() => subsetDp.solve(instance), MIN_TIMED_MS, n < 13);
     return {
         instance,
         greedy: { ...greedy.solve(instance, n <= RECORD_DECISIONS_MAX_N), ms: greedyMs },
-        heldKarp: { ...heldKarp.solve(instance, SNAPSHOTS), ms: hkMs },
+        subsetDp: { ...subsetDp.solve(instance, SNAPSHOTS), ms: dpMs },
     };
 }

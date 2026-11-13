@@ -36,11 +36,11 @@ export const COLORS = {
 
 export const ALGORITHM_COLORS: Record<AlgorithmKey, string> = {
     greedy: "#eb6834",       // orange
-    held_karp: "#2a78d6",    // blue
+    subset_dp: "#2a78d6",    // blue
 };
 
 /**
- * Sequential blue ramp (light -> dark) for Held-Karp's table: a cell is darker the
+ * Sequential blue ramp (light -> dark) for Subset DP's table: a cell is darker the
  * more items its set holds. One hue, so it reads as "more", never as a new category.
  */
 export const SET_SIZE_RAMP = ["#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",

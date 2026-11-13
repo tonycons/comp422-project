@@ -4,7 +4,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Race: Greedy vs Held-Karp (window)",
+            "name": "Race: Greedy vs Subset DP (window)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",

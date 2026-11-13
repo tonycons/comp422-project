@@ -11,9 +11,9 @@ the web demo makes exactly the same decisions as the Python implementation.
     cd demo
     python3 scripts/export_fixtures.py         (or: npm run fixtures)
 
-Re-run this whenever you change greedy.py, held_karp.py, pareto.py,
+Re-run this whenever you change greedy.py, subset_dp.py, pareto.py,
 problem.py or config.py, then run `npm test`.
-Takes under a minute (Held-Karp in Python on the n = 14 map is the slow part).
+Takes under a minute (Subset DP in Python on the n = 14 map is the slow part).
 """
 from __future__ import annotations
 
@@ -25,13 +25,13 @@ DEMO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(DEMO.parent / "ai-claude"))   # the Python project, so `import raccoon` works
 
 from raccoon import config                                       # noqa: E402
-from raccoon.algorithms import greedy, held_karp                 # noqa: E402
+from raccoon.algorithms import greedy, subset_dp                 # noqa: E402
 from raccoon.generator import generate_instance                  # noqa: E402
 
-# (n, seed). Held-Karp (exponential) is only exported up to HK_MAX_N.
+# (n, seed). Subset DP (exponential) is only exported up to DP_MAX_N.
 CASES = [(1, 1), (2, 2), (3, 3), (5, 5), (6, 61), (7, 77), (8, 8), (10, 10), (12, 12),
          (14, 48), (20, 7), (60, 3), (250, 250), (500, 422)]
-HK_MAX_N = 14
+DP_MAX_N = 14
 OUT = DEMO / "tests" / "fixtures" / "python_routes.json"
 
 
@@ -46,9 +46,9 @@ def main() -> None:
             "items": [{"x": it.x, "y": it.y, "food": it.food.name} for it in inst.items],
             "greedy": {"order": g.order, "total_score": g.total_score},
         }
-        if n <= HK_MAX_N:
-            h = held_karp.solve(inst)
-            case["held_karp"] = {"order": h.order, "total_score": h.total_score,
+        if n <= DP_MAX_N:
+            h = subset_dp.solve(inst)
+            case["subset_dp"] = {"order": h.order, "total_score": h.total_score,
                                  "max_front": h.notes["max_front"]}
         cases.append(case)
         print(f"  n={n:<4} seed={seed}")

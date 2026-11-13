@@ -8,9 +8,9 @@
  *
  * For every map size n it builds QUALITY_MAPS_PER_SIZE random maps (fixed seeds, so the
  * calorie results are the same on every computer) and records
- *   - planning time of Greedy and Held-Karp on the first MAPS_PER_SIZE of them
+ *   - planning time of Greedy and Subset DP on the first MAPS_PER_SIZE of them
  *     (the project asks for at least 10 instances per size),
- *   - how many calories Held-Karp's optimal route beats Greedy's by (on all of them).
+ *   - how many calories Subset DP's optimal route beats Greedy's by (on all of them).
  * Greedy is also timed on large maps, where its Theta(n^2) curve is visible.
  *
  * Trendlines: the project asks for a trendline "from the theoretical analysis", so each
@@ -23,7 +23,7 @@
  */
 import { generateInstance } from "./generator";
 import * as greedy from "./greedy";
-import * as heldKarp from "./heldKarp";
+import * as subsetDp from "./subsetDp";
 import { totalCalories } from "./problem";
 import { timeIt } from "./race";
 
@@ -43,20 +43,20 @@ export interface TimePoint {
 export interface QualityPoint {
     n: number;
     seed: number;
-    extraCalories: number;       // Held-Karp score - Greedy score (>= 0)
+    extraCalories: number;       // Subset DP score - Greedy score (>= 0)
     extraPercent: number;        // the same, as % of all the calories on the map
     extraSpoilagePercent: number; // how much MORE Greedy lost to spoilage than the optimum, in %
     greedyOptimal: boolean;      // Greedy happened to find a best route
 }
 
 export interface ScalingData {
-    time: { greedy: TimePoint[]; held_karp: TimePoint[] };   // n = 2..14, same maps for both
+    time: { greedy: TimePoint[]; subset_dp: TimePoint[] };   // n = 2..14, same maps for both
     greedyLarge: TimePoint[];                               // Greedy alone on big maps
     quality: QualityPoint[];
 }
 
 export const emptyScaling = (): ScalingData => ({
-    time: { greedy: [], held_karp: [] },
+    time: { greedy: [], subset_dp: [] },
     greedyLarge: [],
     quality: [],
 });
@@ -72,7 +72,7 @@ function jobs(data: ScalingData): (() => void)[] {
         for (let r = 0; r < 30; r++) {
             const inst = generateInstance(8, r);
             greedy.solve(inst);
-            heldKarp.solve(inst);
+            subsetDp.solve(inst);
         }
     });
     for (const n of EXACT_SIZES) {
@@ -81,12 +81,12 @@ function jobs(data: ScalingData): (() => void)[] {
             list.push(() => {
                 const inst = generateInstance(n, seedFor(n, r));
                 let g = greedy.solve(inst).solution;      // Greedy's route
-                let h = heldKarp.solve(inst).solution;    // the optimal route
+                let h = subsetDp.solve(inst).solution;    // the optimal route
                 if (timed) {   // time both (the timed runs return the same routes again)
                     data.time.greedy.push({ n, ms: timeIt(() => (g = greedy.solve(inst).solution), MIN_MS, false) });
-                    data.time.held_karp.push({ n, ms: timeIt(() => (h = heldKarp.solve(inst).solution), MIN_MS, false) });
+                    data.time.subset_dp.push({ n, ms: timeIt(() => (h = subsetDp.solve(inst).solution), MIN_MS, false) });
                 }
-                // Held-Karp is optimal, so extra >= 0 (clamped against float noise)
+                // Subset DP is optimal, so extra >= 0 (clamped against float noise)
                 const extra = Math.max(0, h.totalScore - g.totalScore);
                 data.quality.push({
                     n,
@@ -138,12 +138,12 @@ export async function runScaling(
 /**
  * f(n) for each algorithm's Theta bound.
  *   Greedy:    n^2         (lines 9-14 of its pseudocode run n(n+1)/2 times)
- *   Held-Karp: n^2 * 2^n   (the textbook bound, Held & Karp 1962; the label-list
+ *   Subset DP: n^2 * 2^n   (Held & Karp 1962; for the repairman objective Wu et al. 2004; the label-list
  *                           factor F is small and treated as a constant)
  */
-export const GROWTH: Record<"greedy" | "held_karp", { label: string; f: (n: number) => number }> = {
+export const GROWTH: Record<"greedy" | "subset_dp", { label: string; f: (n: number) => number }> = {
     greedy: { label: "a·n² + b", f: (n) => n * n },
-    held_karp: { label: "a·n²·2ⁿ + b", f: (n) => n * n * 2 ** n },
+    subset_dp: { label: "a·n²·2ⁿ + b", f: (n) => n * n * 2 ** n },
 };
 
 export interface Fit {

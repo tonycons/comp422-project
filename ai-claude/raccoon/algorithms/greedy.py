@@ -45,7 +45,7 @@ still-fresh food, and among spoiled items the nearest comes first.
 Correctness: it always returns a valid route (every item exactly once,
 because each loop iteration moves exactly one item from `remaining` to
 `route`). It is NOT guaranteed to be optimal -- that is the point of the
-comparison with Held-Karp.
+comparison with Subset DP.
 
 Related literature: the default attractiveness, (calories lost per second) /
 (travel time), is Smith's "weight / processing time" ratio rule, which is

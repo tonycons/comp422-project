@@ -39,11 +39,16 @@ THE GREEDY RACCOON (our variant of the Traveling Repairman Problem)
 What this means for the algorithms
   This is our variant of the Traveling Repairman / Minimum Latency Problem
   (minimize a weighted sum of arrival times), except that each item's cost
-  stops growing at its shelf life. Because of that cap, the cost of eating an
+  stops growing at its shelf life. A score that stops at zero is the Traveling
+  Repairman Problem with Profits (profit p - t if p > t, else 0: J. Pei et al.,
+  Information Sciences 507:108-123, 2020, doi:10.1016/j.ins.2019.08.017,
+  Section 2.1); ours is the weighted version, w * max(0, shelf_life - t).
+  [added 2026-11-13, Claude]
+  Because of that cap, the cost of eating an
   item depends on the exact clock time it is reached, so:
-    * Held-Karp and the Balas-Simonetti DP keep, for each table cell, every
+    * Subset DP and the Balas-Simonetti DP keep, for each table cell, every
       (time, loss) pair that might still lead to the best route (a "Pareto
-      front"); see held_karp.py. They are still exact.
+      front"); see subset_dp.py. They are still exact.
     * 2-opt estimates each move in O(1) and confirms promising ones with the
       exact score; see two_opt.py. It never accepts a move that makes things worse.
   (Before 2026-11-03 spoiled food scored NEGATIVE calories, which made every

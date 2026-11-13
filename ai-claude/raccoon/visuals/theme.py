@@ -42,14 +42,14 @@ ALGORITHM_COLORS = {
     "two_opt": "#1baf7a",          # aqua
     "balas_simonetti": "#e87ba4",  # pink
     "vnd": "#008300",              # green
-    "held_karp": "#2a78d6",        # blue
+    "subset_dp": "#2a78d6",        # blue
     "brute_force": "#e34948",      # red
 }
 
 # Marker shape per algorithm (a second cue besides color in the trade-off chart)
 ALGORITHM_MARKERS = {
     "hilbert": "v", "greedy": "o", "greedy_kd": "P", "two_opt": "s",
-    "balas_simonetti": "D", "vnd": "*", "held_karp": "^", "brute_force": "X",
+    "balas_simonetti": "D", "vnd": "*", "subset_dp": "^", "brute_force": "X",
 }
 
 # -----------------------------------------------------------------------------
@@ -94,7 +94,7 @@ FIGURE_SIZE = (14, 10)       # inches (width, height) of the race window with 1-
 FIGURE_SIZE_MANY = (17, 10)  # ... and with 4 or more algorithms
 
 SHOW_TRAIL = True            # draw the path walked so far
-SHOW_PLANNED_ROUTE = True    # Held-Karp: faint dashed line of the full plan
+SHOW_PLANNED_ROUTE = True    # Subset DP: faint dashed line of the full plan
 SHOW_GREEDY_THINKING = True  # Greedy: faint lines to every candidate it considered
 SHOW_FRESHNESS_BARS = True   # little bar under each food item
 SHOW_EAT_ORDER = True        # number each item in the order it was eaten

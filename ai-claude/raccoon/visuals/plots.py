@@ -10,10 +10,10 @@ For each algorithm:  a scatter plot of CPU time vs. instance size, one dot per
 instance, with two lines on top:
   1. the average running time for each size,
   2. a trendline fitted to the THEORETICAL running time:  T(n) = a * f(n) + b
-     where f(n) = n^2 for Greedy and n^2 * 2^n for Held-Karp
+     where f(n) = n^2 for Greedy and n^2 * 2^n for Subset DP
      (a and b found by least squares; R^2 shows how well theory matches data).
 
-Extras: Held-Karp on a log scale, Greedy-vs-optimal quality, and a side-by-side
+Extras: Subset DP on a log scale, Greedy-vs-optimal quality, and a side-by-side
 comparison. All read the CSVs written by benchmark.py, so you can restyle and
 re-draw without re-running the benchmark:   python main.py plots
 """
@@ -149,8 +149,8 @@ def plot_quality(out_path: Optional[Path] = None) -> Path:
     sizes, avg = averages_by_size(n, ratio)
 
     fig, ax = plt.subplots(figsize=theme.PLOT_SIZE)
-    ax.axhline(1.0, color=theme.ALGORITHM_COLORS["held_karp"], lw=2, zorder=1,
-               label="Held-Karp (always optimal = 1.0)")
+    ax.axhline(1.0, color=theme.ALGORITHM_COLORS["subset_dp"], lw=2, zorder=1,
+               label="Subset DP (always optimal = 1.0)")
     ax.scatter(n, ratio, s=theme.SCATTER_SIZE, color=theme.ALGORITHM_COLORS["greedy"],
                alpha=theme.SCATTER_ALPHA, edgecolors="none", zorder=2,
                label="Greedy, one random instance")
@@ -195,7 +195,7 @@ def plot_comparison(keys: Iterable[str], out_path: Optional[Path] = None) -> Pat
     ax.set_ylabel("Average CPU time per run (seconds, log scale)", fontsize=theme.LABEL_SIZE)
     ax.margins(x=0.12)
     out_path = out_path or config.RESULTS_DIR / "plot_comparison.png"
-    title = ("Average running time: Greedy vs. Held-Karp" if set(keys) == {"greedy", "held_karp"}
+    title = ("Average running time: Greedy vs. Subset DP" if set(keys) == {"greedy", "subset_dp"}
              else "Average running time of every algorithm")
     path = _finish(fig, ax, title, out_path, legend_cols=1,
                    legend_loc="lower right" if len(keys) > 3 else "upper left")
@@ -210,7 +210,7 @@ def make_all_plots(keys: Iterable[str] = BENCHMARK_ALGORITHMS) -> List[Path]:
     available = [k for k in keys if runtime_csv_path(k).exists()]
     for key in available:
         made.append(plot_runtime(key))
-        if key in ("held_karp", "brute_force"):
+        if key in ("subset_dp", "brute_force"):
             made.append(plot_runtime(key, log_y=True))
     if quality_csv_path().exists():
         made.append(plot_quality())

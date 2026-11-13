@@ -7,16 +7,16 @@ scale as maps grow:
 | | Algorithm | Time | Source it was ported from |
 |---|---|---|---|
 | Straightforward | **Greedy** (Smith's ratio rule) | Θ(n²) | `raccoon/algorithms/greedy.py` |
-| Clever | **Held-Karp** dynamic programming (with (time, loss) labels) | Θ(n²·2ⁿ), O(n²·2ⁿ·F) with labels | `raccoon/algorithms/held_karp.py`, `pareto.py` |
+| Clever | **Subset DP**: exact dynamic programming over (set, last item), with (time, loss) labels | Θ(n²·2ⁿ), O(n²·2ⁿ·F) with labels | `raccoon/algorithms/subset_dp.py`, `pareto.py` |
 
 The page has three parts:
 
-1. **The race** (n = 2 to 16): both raccoons plan, then walk. While Held-Karp plans, its map shows
+1. **The race** (n = 2 to 16): both raccoons plan, then walk. While Subset DP plans, its map shows
    the cheapest partial route its table has found so far, and the strip under each map lights up
-   the work done (Greedy's comparisons vs. Held-Karp's 2ⁿ sets).
+   the work done (Greedy's comparisons vs. Subset DP's 2ⁿ sets).
 2. **How they scale**: 20 fixed maps per size n = 2..14 (10 of them timed), measured in the
-   browser when you scroll there (about 10 s). Charts: extra calories Held-Karp earns over Greedy,
-   how often Greedy is optimal, planning time on a log scale (Greedy vs. Held-Karp), and
+   browser when you scroll there (about 10 s). Charts: extra calories Subset DP earns over Greedy,
+   how often Greedy is optimal, planning time on a log scale (Greedy vs. Subset DP), and
    one chart per algorithm with a least-squares fit of its Θ bound (Greedy is timed on
    n = 100..1,500 so its n² curve shows).
 3. **How it works**: scoring, pseudocode, complexity, references.
@@ -60,10 +60,10 @@ npx wrangler pages deploy dist --project-name greedy-raccoon
 
 The algorithms exist twice: Python (the graded implementation, benchmarks, tests) and TypeScript
 (this site). `tests/parity.test.ts` checks that both produce **identical routes**
-on 14 maps from n = 1 to n = 500 (Held-Karp up to 14), and that
+on 14 maps from n = 1 to n = 500 (Subset DP up to 14), and that
 `src/core/config.ts` matches `raccoon/config.py`.
 
-If you change `ai-claude/raccoon/problem.py`, `config.py`, `greedy.py`, `held_karp.py` or `pareto.py`:
+If you change `ai-claude/raccoon/problem.py`, `config.py`, `greedy.py`, `subset_dp.py` or `pareto.py`:
 
 ```bash
 cd demo
@@ -80,7 +80,7 @@ npm test           # fails if the TypeScript now disagrees, so port the change t
 | `src/core/race.ts` | Builds a map, solves and times both algorithms |
 | `src/core/scaling.ts` | The "How they scale" study: maps, timings, calorie gaps, least-squares fits |
 | `src/ui/mapView.ts` | One algorithm's map: planning replay + walking animation |
-| `src/ui/workView.ts` | The strip under each map (Greedy's comparisons, Held-Karp's table) |
+| `src/ui/workView.ts` | The strip under each map (Greedy's comparisons, Subset DP's table) |
 | `src/ui/scatterChart.ts` | The scaling charts (dots per map, average line, fitted trendline, hover) |
 | `src/ui/timeline.ts` | "Calories banked over time" chart (hover / ← → for values) |
 | `src/ui/theme.ts` | Colors, food shapes, animation timing |

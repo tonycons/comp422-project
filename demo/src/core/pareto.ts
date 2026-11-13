@@ -4,7 +4,7 @@
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * Which (time, loss) labels a Held-Karp cell may throw away.
+ * Which (time, loss) labels a Subset DP cell may throw away.
  * TypeScript port of ai-claude/raccoon/algorithms/pareto.py (same order of operations).
  *
  * Two partial routes that ate the same items and stand at the same place can differ in
@@ -22,12 +22,16 @@
  *       whose shelf life is longer than t.
  *
  * If no food could ever spoil, Rule 2 would always leave exactly one label per cell:
- * the textbook Held-Karp table.
+ * the one-value-per-cell table of Held & Karp (1962).
  *
- * Sources: Rule 1 is the standard dominance test of labeling DPs with a time resource,
- * e.g. Y. Dumas, J. Desrosiers, E. Gelinas, M. M. Solomon, "An optimal algorithm for the
- * traveling salesman problem with time windows", Operations Research 43(2):367-371, 1995,
- * doi:10.1287/opre.43.2.367. Rule 2 is our own (derived above for this scoring rule, not
+ * Sources (updated 2026-11-13, Claude): keeping (time, cost) labels per (set, last) state
+ * and discarding dominated ones is the forward label-propagation DP of J. N. Tsitsiklis,
+ * "Special cases of traveling salesman and repairman problems with time windows",
+ * Networks 22(3):263-282, 1992, doi:10.1002/net.3230220305 (Section VIII), and the
+ * "standard dominance rules" of R. Roberti and A. Mingozzi, "Dynamic ng-path relaxation
+ * for the delivery man problem", Transportation Science 48(3):413-424, 2014,
+ * doi:10.1287/trsc.2013.0474 (Section 5). Neither paper spells Rule 1 out for this
+ * scoring rule; the argument above is ours. Rule 2 is our own (derived above for this scoring rule, not
  * taken from a paper); the Python tests check it against an exhaustive search.
  */
 
@@ -37,7 +41,7 @@ export const EPS = 1e-9;
 /**
  * Keep only the labels no other label dominates.
  * Labels are given as parallel arrays (time[k], loss[k]) for k = 0 .. count-1, so the
- * Held-Karp inner loop does not allocate an object per candidate.
+ * Subset DP inner loop does not allocate an object per candidate.
  * Returns the indices of the survivors, sorted by time. `wLive` enables Rule 2.
  * O(m log m + m * f) for m labels and f survivors.
  */

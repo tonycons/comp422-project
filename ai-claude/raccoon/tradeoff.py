@@ -12,14 +12,14 @@ option that meets them. Here the two aspiration levels live in config.py:
 
     QUALITY_ASPIRATION_PCT    - at most this much extra spoilage compared with
                                 the best route we know for the same map
-                                (the true optimum when Held-Karp can run)
+                                (the true optimum when Subset DP can run)
     SPEED_ASPIRATION_SECONDS  - at most this much CPU time per map at the
                                 largest size tested
 
 Procedure (python main.py tradeoff):
   1. For each size n in TRADEOFF_SIZES, make INSTANCES_PER_SIZE random maps.
   2. Run every algorithm that can handle n; record CPU time and spoilage.
-  3. Reference = Held-Karp's optimum if it ran, otherwise the best route any
+  3. Reference = Subset DP's optimum if it ran, otherwise the best route any
      algorithm found on that map ("best known").
   4. An algorithm SATISFICES if, at EVERY size, its average extra spoilage is
      within the quality aspiration, AND its average time at the largest size
@@ -65,7 +65,7 @@ def tradeoff_keys() -> List[str]:
 
 
 def _can_run(key: str, n: int) -> bool:
-    limit = config.HELD_KARP_MAX_N if key == "held_karp" else ALGORITHMS[key].max_n
+    limit = config.SUBSET_DP_MAX_N if key == "subset_dp" else ALGORITHMS[key].max_n
     return limit is None or n <= limit
 
 
@@ -86,8 +86,8 @@ def run_tradeoff(quick: bool = False) -> List[dict]:
             for key in keys:
                 seconds, _reps, sol = time_cpu(ALGORITHMS[key].solve, instance, min_seconds)
                 results[key] = (seconds, sol.spoilage_loss)
-            if "held_karp" in results:
-                reference, kind = results["held_karp"][1], "optimal"
+            if "subset_dp" in results:
+                reference, kind = results["subset_dp"][1], "optimal"
             else:
                 reference, kind = min(loss for _s, loss in results.values()), "best known"
             for key, (seconds, loss) in results.items():
@@ -173,7 +173,7 @@ def report(summary: dict) -> str:
              f"Aspiration levels (config.py): average extra spoilage <= {q:g}% at every size, "
              f"and <= {sp:g} s CPU per map at n = {sizes[-1]}.",
              f"{config.INSTANCES_PER_SIZE} random maps per size. Extra spoilage is measured against the "
-             "optimal route (Held-Karp) where it can run, otherwise against the best route any algorithm found.",
+             "optimal route (Subset DP) where it can run, otherwise against the best route any algorithm found.",
              ""]
     if summary["relaxed"]:
         lines += [f"Nothing met {q:g}%, so the quality aspiration was relaxed in {config.ASPIRATION_STEP_PCT:g}-point "

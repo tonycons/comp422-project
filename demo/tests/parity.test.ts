@@ -11,7 +11,7 @@
 import { describe, expect, it } from "vitest";
 import * as config from "../src/core/config";
 import * as greedy from "../src/core/greedy";
-import * as heldKarp from "../src/core/heldKarp";
+import * as subsetDp from "../src/core/subsetDp";
 import type { Problem } from "../src/core/problem";
 import fixtures from "./fixtures/python_routes.json";
 
@@ -20,7 +20,7 @@ interface Case {
     seed: number;
     items: { x: number; y: number; food: string }[];
     greedy: { order: number[]; total_score: number };
-    held_karp?: { order: number[]; total_score: number; max_front: number };
+    subset_dp?: { order: number[]; total_score: number; max_front: number };
 }
 
 const cases = fixtures.cases as Case[];
@@ -60,10 +60,10 @@ describe.each(cases.map((c) => [`n=${c.n} seed=${c.seed}`, c] as const))(
             expect(solution.totalScore).toBeCloseTo(c.greedy.total_score, 6);
         });
 
-        if (c.held_karp) {
-            const py = c.held_karp;
-            it("Held-Karp", () => {
-                const { solution, stats } = heldKarp.solve(inst);
+        if (c.subset_dp) {
+            const py = c.subset_dp;
+            it("Subset DP", () => {
+                const { solution, stats } = subsetDp.solve(inst);
                 expect(solution.order).toEqual(py.order);
                 expect(solution.totalScore).toBeCloseTo(py.total_score, 6);
                 expect(stats.maxFront).toBe(py.max_front);   // same labels kept

@@ -8,7 +8,7 @@
  *
  *   Greedy:    a staircase. Column k is decision k; it holds one square per item the
  *              raccoon still had to compare (n, n-1, ..., 1), so the area is n(n+1)/2.
- *   Held-Karp: its table. One square per set of items S (2^n of them), in the order the
+ *   Subset DP: its table. One square per set of items S (2^n of them), in the order the
  *              algorithm fills them (S = 1, 2, 3, ...). Darker = more items in the set,
  *              which shows that the integer order mixes small and large sets while
  *              always finishing S - {j} before S.
@@ -16,7 +16,7 @@
  * Both are drawn from a tiny pre-rendered image (one pixel per square) scaled up, so
  * even 65,536 squares cost one drawImage per frame.
  */
-import { popcount } from "../core/heldKarp";
+import { popcount } from "../core/subsetDp";
 import type { AlgorithmKey } from "../core/problem";
 import { ALGORITHM_COLORS, COLORS, fitCanvas, SET_SIZE_RAMP } from "./theme";
 
@@ -36,7 +36,7 @@ export class WorkView {
     /** Build the picture for an n-item map. */
     setData(key: AlgorithmKey, n: number): void {
         this.key = key;
-        if (key === "held_karp") {
+        if (key === "subset_dp") {
             this.squares = 2 ** n;
             // a wide rectangle of squares, about as wide as the canvas is
             this.cols = Math.max(1, Math.ceil(Math.sqrt(this.squares * 5)));
@@ -84,7 +84,7 @@ export class WorkView {
         // unlit background, in the same footprint
         ctx.globalAlpha = 1;
         ctx.fillStyle = COLORS.grid;
-        if (this.key === "held_karp") {
+        if (this.key === "subset_dp") {
             const fullRows = Math.floor(this.squares / this.cols);
             ctx.fillRect(x0, y0, w, fullRows * cell);
             const rest = this.squares - fullRows * this.cols;
@@ -107,7 +107,7 @@ export class WorkView {
         if (done <= 0) {
             return;
         }
-        if (this.key === "held_karp") {
+        if (this.key === "subset_dp") {
             const fullRows = Math.floor(done / this.cols);
             if (fullRows > 0) {
                 ctx.drawImage(this.image, 0, 0, this.cols, fullRows, x0, y0, w, fullRows * cell);

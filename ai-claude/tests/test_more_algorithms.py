@@ -11,7 +11,7 @@ import itertools
 import math
 import unittest
 
-from raccoon.algorithms import (ALGORITHMS, balas_simonetti, greedy, greedy_kd, held_karp,
+from raccoon.algorithms import (ALGORITHMS, balas_simonetti, greedy, greedy_kd, subset_dp,
                                 hilbert, two_opt, vnd)
 from raccoon.generator import generate_instance
 from raccoon.problem import evaluate_route
@@ -33,7 +33,7 @@ class TestEveryAlgorithm(unittest.TestCase):
     def test_never_better_than_optimal(self):
         for seed in range(5):
             inst = generate_instance(9, seed=seed)
-            best = held_karp.solve(inst).spoilage_loss
+            best = subset_dp.solve(inst).spoilage_loss
             for key in ("hilbert", "greedy_kd", "two_opt", "balas_simonetti", "vnd"):
                 self.assertGreaterEqual(ALGORITHMS[key].solve(inst).spoilage_loss, best - 1e-6, msg=key)
 
@@ -98,11 +98,11 @@ class TestLocalSearch(unittest.TestCase):
                 self.assertAlmostEqual(cost, best, places=6, msg=f"n={n} k={k}")
                 self.assertAlmostEqual(cost, loss(inst, route), places=6)
 
-    def test_balas_simonetti_with_k_equal_n_is_held_karp(self):
+    def test_balas_simonetti_with_k_equal_n_is_subset_dp(self):
         for seed in range(4):
             inst = generate_instance(8, seed=seed)
             _route, cost = balas_simonetti.best_in_window(inst, hilbert.solve(inst).order, k=8)
-            self.assertAlmostEqual(cost, held_karp.solve(inst).spoilage_loss, places=6)
+            self.assertAlmostEqual(cost, subset_dp.solve(inst).spoilage_loss, places=6)
 
     def test_vnd_at_least_as_good_as_its_start(self):
         for seed in range(5):

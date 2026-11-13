@@ -21,7 +21,7 @@ We will implement two solution algorithms.
     Then navigate to and consume the item with the highest attractiveness. This approach is based on “instant gratification” (however, with the decay rate multiplier causing the raccoon to prioritize items that won’t last much longer). This gives a baseline for our second algorithm to beat.
 
 * ### Hard (Dynamic Programming):
-    We will implement a “Modified TSP Dynamic Programming (Held-Karp)”. This would be much more complex to code but could result in a more optimal solution because dynamic programming can calculate an entire path ahead of time instead of taking decisions in the moment like our greedy algorithm.
+    We will implement a “Subset Dynamic Programming (Subset DP)”. This would be much more complex to code but could result in a more optimal solution because dynamic programming can calculate an entire path ahead of time instead of taking decisions in the moment like our greedy algorithm.
 
 
 ## Viewing the Solutions
@@ -35,7 +35,7 @@ The first run creates a private Python environment (`.venv`) and installs numpy 
 matplotlib into it (needs Python 3.9+ and internet once). Then a menu opens:
 
 ```
-  1) Watch the race: Greedy vs Held-Karp (window)
+  1) Watch the race: Greedy vs Subset DP (window)
   2) Save the race as results/race.gif
   3) Quick benchmark + plots   (about 1 minute)
   4) Full benchmark + plots    (about 9 minutes)
@@ -49,14 +49,14 @@ Or call commands directly (`run.bat <command>` on Windows, `./run.sh <command>` 
 | Command | What it does |
 |---|---|
 | `demo` | Live race window. Keys: SPACE pause, R restart, N new map, ←/→ step |
-| `demo --n 12 --seed 3` | Race on a specific map (Held-Karp is left out above n = 16) |
+| `demo --n 12 --seed 3` | Race on a specific map (Subset DP is left out above n = 16) |
 | `demo --n 60 --algos greedy two_opt vnd` | Choose which algorithms race |
 | `demo --save results/race.gif --snapshot results/race_final.png` | Save the animation and a still image |
 | `benchmark` / `benchmark --quick` | CPU-time benchmark of every algorithm (10 random instances per size) + all plots |
-| `benchmark --only greedy held_karp` | Just the original two |
+| `benchmark --only greedy subset_dp` | Just the original two |
 | `tradeoff` / `tradeoff --quick` | Speed-vs-quality study and the "most satisficing" verdict |
 | `plots` | Re-draw the plots from `results/*.csv` without re-running |
-| `test` | Correctness tests (Held-Karp and the windowed DP are checked against brute force) |
+| `test` | Correctness tests (Subset DP and the windowed DP are checked against brute force) |
 
 **The race** has two phases. *Phase 1, planning:* each panel shows a bar for the CPU time
 its algorithm needed to compute the route. All bars share one scale, and the slowest
@@ -68,7 +68,7 @@ together, and a chart tracks the calories each one has banked.
 Eating an item at time *t* is worth `calories × max(0, 1 − t / shelf_life)`: food loses freshness
 in a straight line and **spoiled food is worth 0 calories** (never negative). Every algorithm
 minimizes the calories lost to waiting, `Σ w·min(t, shelf_life)`, where `w = calories / shelf_life`.
-Because each item stops losing calories once it has spoiled, Held-Karp and the windowed DP keep a
+Because each item stops losing calories once it has spoiled, Subset DP and the windowed DP keep a
 short list of (time, loss) options per table cell (`raccoon/algorithms/pareto.py`) so they stay exact.
 
 ### The algorithms
@@ -81,11 +81,11 @@ short list of (time, loss) options per table cell (`raccoon/algorithms/pareto.py
 | `two_opt` | Greedy + 2-opt local search | O(n log² n + P·n·L + V·n), ≈ n² in practice | good | Croes 1958; Silva et al. 2012 |
 | `balas_simonetti` | Greedy + Balas–Simonetti windowed DP | O(n log² n + P·n·k²·2ᵏ·F) | very good, slow on big maps | Balas & Simonetti 2001 |
 | `vnd` | Greedy + Variable Neighborhood Descent (2-opt ⇄ DP) | ≈ n log² n + rounds·n | best heuristic | Mladenović & Hansen 1997 |
-| `held_karp` | **Held–Karp DP** (exact) | O(n²·2ⁿ·F) | optimal | Held & Karp 1962 |
+| `subset_dp` | **Subset DP** (exact) | O(n²·2ⁿ·F) | optimal | Wu et al. 2004; Roberti & Mingozzi 2014; Tsitsiklis 1992 (table shape: Held & Karp 1962) |
 | `brute_force` | Try every order (test checker) | Θ(n·n!) | optimal | – |
 
 P, L, k = fixed settings in `config.py`. V = 2-opt moves checked exactly. F = the longest (time, loss)
-list in a DP cell (small in practice; Held-Karp reports it as `notes["max_front"]`).
+list in a DP cell (small in practice; Subset DP reports it as `notes["max_front"]`).
 
 **"Most satisficing"** (Simon 1956): the study (`tradeoff`) runs every algorithm on maps with
 n = 12, 100 and 1000 items. Pass marks are set in `raccoon/config.py`: at most 3% extra
@@ -95,7 +95,7 @@ relaxes the quality mark 1 point at a time and reports how far it had to go. Res
 `results/tradeoff_summary.md` and `results/plot_tradeoff_satisficing.png`.
 
 Output in `results/`: `runtime_<algorithm>.csv` and `plot_runtime_<algorithm>.png` (scatter, average,
-theory fit), `plot_runtime_held_karp_log.png`, `plot_quality_greedy_vs_optimal.png`,
+theory fit), `plot_runtime_subset_dp_log.png`, `plot_quality_greedy_vs_optimal.png`,
 `plot_comparison.png`, `tradeoff.csv`, `tradeoff_summary.md`, `plot_tradeoff_satisficing.png`.
 
 ### Working on it in VS Code

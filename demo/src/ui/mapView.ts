@@ -11,7 +11,7 @@
  * Both are pure functions of their argument, so the timeline can be scrubbed freely.
  */
 import type { Decision } from "../core/greedy";
-import type { Snapshot } from "../core/heldKarp";
+import type { Snapshot } from "../core/subsetDp";
 import { freshnessAt, type AlgorithmKey, type Problem, type Solution } from "../core/problem";
 import { ALGORITHM_COLORS, COLORS, fitCanvas, foodStyle, STALE_BELOW, traceShape } from "./theme";
 
@@ -20,7 +20,7 @@ export interface PanelData {
     instance: Problem;
     solution: Solution;
     decisions?: Decision[] | null;   // Greedy: what it looked at each step
-    snapshots?: Snapshot[] | null;   // Held-Karp: best partial routes as its table fills
+    snapshots?: Snapshot[] | null;   // Subset DP: best partial routes as its table fills
 }
 
 // Detail switches by map size (things that turn into noise on busy maps)
@@ -77,15 +77,15 @@ export class MapView {
         this.clear();
         let lit: number | null = null;   // bitmask of items to draw at full strength (null = all)
 
-        if (d.key === "held_karp" && d.snapshots && d.snapshots.length > 0) {
+        if (d.key === "subset_dp" && d.snapshots && d.snapshots.length > 0) {
             if (progress >= 1) {
-                this.strokeRoute(d.solution.order, ALGORITHM_COLORS.held_karp, 2, 0.9);
+                this.strokeRoute(d.solution.order, ALGORITHM_COLORS.subset_dp, 2, 0.9);
             } else {
                 // the newest finished table row: the cheapest way found so far to eat set S
                 const frame = MapView.snapshotAt(d.snapshots, progress);
                 if (frame) {
                     lit = frame.set;
-                    this.strokeRoute(frame.route, ALGORITHM_COLORS.held_karp, 2, 0.85);
+                    this.strokeRoute(frame.route, ALGORITHM_COLORS.subset_dp, 2, 0.85);
                 }
             }
         }
@@ -132,12 +132,12 @@ export class MapView {
             ctx.restore();
         }
 
-        // Held-Karp planned ahead: dashed line through the rest of its route
-        if (d.key === "held_karp" && k < n) {
+        // Subset DP planned ahead: dashed line through the rest of its route
+        if (d.key === "subset_dp" && k < n) {
             const ctx = this.ctx;
             ctx.save();
             ctx.setLineDash([3, 4]);
-            ctx.strokeStyle = ALGORITHM_COLORS.held_karp;
+            ctx.strokeStyle = ALGORITHM_COLORS.subset_dp;
             ctx.globalAlpha = 0.45;
             ctx.lineWidth = 1;
             ctx.beginPath();

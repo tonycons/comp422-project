@@ -8,17 +8,17 @@
 DYNAMIC-PROGRAMMING LOCAL SEARCH: Greedy + Balas-Simonetti DP
 =============================================================
 
-Held-Karp is exact but exponential in n. Balas & Simonetti's idea: take a
+Subset DP is exact but exponential in n. Balas & Simonetti's idea: take a
 starting route and only allow orders where nothing moves "too far":
 
     item i must still come before item j whenever j >= i + k
     (positions measured in the starting route; k = window size, e.g. 6)
 
-Inside that restriction, a Held-Karp-style DP finds the BEST route exactly,
+Inside that restriction, a subset DP (like subset_dp.py) finds the BEST route exactly,
 in time LINEAR in n (exponential only in the small constant k). The number
 of routes it considers is exponential in n, so it is a very large
 neighborhood searched very quickly. Repeat from the new route until it stops
-improving. With k = n it IS Held-Karp (every order is allowed).
+improving. With k = n it IS the Subset DP (every order is allowed).
 
 Why the DP state is small. Let f = the first position not eaten yet.
   * Nothing at position >= f + k can have been eaten (it would have to come
@@ -28,7 +28,7 @@ Why the DP state is small. Let f = the first position not eaten yet.
   * The last item eaten is within k of f as well.
 So a state is (f, M, last) and the eaten set is known from it.
 
-Spoiled food is worth 0, so (exactly as in held_karp.py) a state keeps a short
+Spoiled food is worth 0, so (exactly as in subset_dp.py) a state keeps a short
 Pareto front of labels (time, loss) instead of one number, pruned with the
 two rules in pareto.py. Eating position j at time t' adds loss_j(t').
 

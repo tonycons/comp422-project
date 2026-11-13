@@ -27,7 +27,7 @@ def race_keys(n: int, keys: Optional[Sequence[str]] = None) -> List[str]:
     """The algorithms to race on a map with n items (too-slow ones are left out)."""
     chosen = []
     for key in (keys or config.RACE_ALGORITHMS):
-        limit = config.HELD_KARP_MAX_N if key == "held_karp" else ALGORITHMS[key].max_n
+        limit = config.SUBSET_DP_MAX_N if key == "subset_dp" else ALGORITHMS[key].max_n
         if limit is None or n <= limit:
             chosen.append(key)
         else:

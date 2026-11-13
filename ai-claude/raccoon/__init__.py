@@ -9,7 +9,7 @@ Package layout
     config.py       every tunable number (map size, food types, benchmark sizes)
     generator.py    random instances
     algorithms/     hilbert, greedy, greedy_kd, two_opt, balas_simonetti, vnd,
-                    held_karp (+ brute_force for checking) - see algorithms/__init__.py
+                    subset_dp (+ brute_force for checking) - see algorithms/__init__.py
     benchmark.py    CPU-time measurements -> results/*.csv
     tradeoff.py     speed-vs-quality study ("which algorithm is good enough?")
     race.py         one map, every algorithm, timed - feeds the animation

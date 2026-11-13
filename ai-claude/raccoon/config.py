@@ -50,7 +50,7 @@ FOOD_TYPES = [
 #   "readme"  - the formula sketched in our README, taken literally:
 #               decay_rate * freshness_on_arrival / calories
 #   "nearest" - plain nearest-neighbor (ignores food entirely), a sanity baseline
-# Measured against the optimal (Held-Karp) route on random maps with n = 8..12
+# Measured against the optimal (Subset DP) route on random maps with n = 8..12
 # (spoiled food = 0 calories), the extra calories lost to spoilage were on average:
 #   instant +8%,  ratio +10%,  nearest +12%,  readme +80%
 # "ratio" stays the default because the web demo (demo/) and all saved results use it.
@@ -69,13 +69,13 @@ LOCAL_SEARCH_MAX_PASSES = 20   # safety cap on improvement passes/rounds (P)
 # -----------------------------------------------------------------------------
 # Demo / animation
 # -----------------------------------------------------------------------------
-DEMO_N = 14        # number of food items in the demo race (Held-Karp is skipped above HELD_KARP_MAX_N)
+DEMO_N = 14        # number of food items in the demo race (Subset DP is skipped above SUBSET_DP_MAX_N)
 DEMO_SEED = 48     # random seed for the demo map; change it to get a different map
-HELD_KARP_MAX_N = 16           # the race leaves Held-Karp out for bigger maps (n = 16 takes ~7 s)
+SUBSET_DP_MAX_N = 16           # the race leaves Subset DP out for bigger maps (n = 16 takes ~7 s)
 
 # Which algorithms race side by side (in this order). Any keys from
 # raccoon/algorithms/__init__.py work; 6 or fewer fit best on screen.
-RACE_ALGORITHMS = ["hilbert", "greedy", "two_opt", "balas_simonetti", "vnd", "held_karp"]
+RACE_ALGORITHMS = ["hilbert", "greedy", "two_opt", "balas_simonetti", "vnd", "subset_dp"]
 
 # -----------------------------------------------------------------------------
 # Speed-vs-quality study  (python main.py tradeoff)  - "which one is good enough?"
@@ -88,7 +88,7 @@ QUALITY_ASPIRATION_PCT = 3.0       # at most this much extra spoilage vs. the be
 SPEED_ASPIRATION_SECONDS = 1.0     # at most this much CPU time per map at the largest size below
 ASPIRATION_STEP_PCT = 1.0          # if NOTHING qualifies, relax the quality bar by this much and
                                    # try again (Simon: aspirations drop when the search fails)
-TRADEOFF_SIZES = [12, 100, 1000]   # map sizes to test (sizes <= HELD_KARP_MAX_N use the true optimum)
+TRADEOFF_SIZES = [12, 100, 1000]   # map sizes to test (sizes <= SUBSET_DP_MAX_N use the true optimum)
 QUICK_TRADEOFF_SIZES = [10, 100, 300]
 
 # -----------------------------------------------------------------------------
@@ -106,7 +106,7 @@ BENCHMARK_SIZES = {
     "two_opt":         list(range(100, 2001, 100)),      # 100 .. 2,000
     "balas_simonetti": list(range(100, 1001, 100)),      # 100 .. 1,000
     "vnd":             list(range(100, 1001, 100)),      # 100 .. 1,000
-    "held_karp":       list(range(2, 16)),               # 2 .. 15  (n = 15 takes ~3 s per run)
+    "subset_dp":       list(range(2, 16)),               # 2 .. 15  (n = 15 takes ~3 s per run)
     "brute_force":     list(range(2, 10)),               # 2 .. 9 (only if you ask for it)
 }
 QUICK_BENCHMARK_SIZES = {                       # used by  --quick
@@ -116,7 +116,7 @@ QUICK_BENCHMARK_SIZES = {                       # used by  --quick
     "two_opt":         list(range(100, 501, 100)),
     "balas_simonetti": list(range(100, 501, 100)),
     "vnd":             list(range(100, 501, 100)),
-    "held_karp":       list(range(2, 13)),
+    "subset_dp":       list(range(2, 13)),
     "brute_force":     list(range(2, 9)),
 }
 

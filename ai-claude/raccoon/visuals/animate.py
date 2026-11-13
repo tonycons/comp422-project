@@ -9,7 +9,7 @@
     +-----------+-----------+-----------+-----------+
     |  Hilbert  |  Greedy   |  2-opt    |  B-S DP   |   one map panel per algorithm
     +-----------+-----------+-----------+-----------+   (config.RACE_ALGORITHMS)
-    |  VND      | Held-Karp |  calories banked      |   timeline fills the free cells
+    |  VND      | Subset DP |  calories banked      |   timeline fills the free cells
     +-----------+-----------+-----------------------+
 
 Two phases:

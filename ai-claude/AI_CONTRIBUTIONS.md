@@ -423,3 +423,87 @@ The calorie numbers depend only on the fixed maps, so every browser shows exactl
 `tsc` strict type-check passes; all demo tests pass (Node 22 with a small vitest stand-in, because npm
 packages could not be downloaded there); the page was bundled and checked in Chromium with no console
 errors. **Run `npm install` and `npm test` once yourselves.**
+
+## Session 6 - 2026-11-13: citations for the exact DP (traveling repairman sources)
+
+| | |
+|---|---|
+| **AI tool** | Claude (Anthropic), model Claude Fable 5.2, via Claude Code in VS Code |
+| **Prompted by** | git user `tonycons` (fill in the group member's name) |
+| **Git branch** | not committed by the AI |
+| **Inputs given** | the four PDFs in `scientific_sources/` (named `toa_sources/` at the time; the AI read all four) |
+
+**Prompts (verbatim):**
+> We have a problem where our held-karp implementation for this problem (which is an instance of TRP)
+> isn't exactly supported by any sources. Held-karp is meant for TSP. Now I have some scientific sources
+> in the toa_sources folder where there may be an implementation of the DP algorithm that we have in our
+> project. I want you to read these sources, propose a new name instead of "modified Held-Karp", and
+> write some citations we can use to support our algorithm.
+
+> Yes, update the citations in the project
+
+### What changed (comments, page text and one README cell only; no code logic)
+
+- `demo/src/core/heldKarp.ts`, `pareto.ts`, `problem.ts`, `scaling.ts`, `demo/index.html`,
+  `raccoon/algorithms/held_karp.py`, `pareto.py`, `raccoon/problem.py`, `README.md` (algorithm table).
+- Dumas et al. (1995) was removed as the source of the label lists (it is not in `scientific_sources/` and is a
+  TSP-with-time-windows paper). Earlier sessions of this log still mention it; they are left as history.
+- The algorithm is still called Held-Karp everywhere. The AI proposed "Subset dynamic programming with
+  label dominance" as a replacement name; the group has not applied it.
+
+### What each source supports (page numbers are the journal's)
+
+- **Wu, Huang & Zhan (2004)**, Section 3.1, p. 304-305: O(n^2 * 2^n) dynamic program for the minimum latency
+  (traveling repairman) problem over "configurations" (visited set, last vertex). This is our table.
+- **Roberti & Mingozzi (2014)**, Section 2, p. 415 and Section 5, p. 420: the same recursion F(S, i) for the
+  delivery man problem, and an exact method using "standard dominance rules".
+- **Tsitsiklis (1992)**, p. 275 and Section VIII, p. 277-279: forward DP over states (i, S) that propagates labels
+  and keeps track of both time and waiting time. This supports a label LIST per cell.
+- **Pei et al. (2020)**, Section 2.1, p. 109-110: the Traveling Repairman Problem with Profits (profit p - t if
+  p > t, else 0). It supports the problem definition only; the paper is about heuristics.
+
+### Things the group should know before citing
+
+- **Not in any source:** dominance Rule 2, the per-item weights, the O(n^2 * 2^n * F) bound, and the
+  argument that "must eat everything" has the same optimum as "may skip nodes". Present these as your own.
+- The Tsitsiklis DOI (10.1002/net.3230220305) was written from the AI's memory; it is not printed in the
+  PDF. Check it. The other three DOIs are printed in the PDFs.
+
+### Sources added
+
+- B. Y. Wu, Z.-N. Huang, F.-J. Zhan, "Exact algorithms for the minimum latency problem", Information
+  Processing Letters 92(6):303-309, 2004. doi:10.1016/j.ipl.2004.09.009
+- R. Roberti, A. Mingozzi, "Dynamic ng-path relaxation for the delivery man problem", Transportation
+  Science 48(3):413-424, 2014. doi:10.1287/trsc.2013.0474
+- J. N. Tsitsiklis, "Special cases of traveling salesman and repairman problems with time windows",
+  Networks 22(3):263-282, 1992. doi:10.1002/net.3230220305
+- J. Pei, N. Mladenović, D. Urošević, J. Brimberg, X. Liu, "Solving the traveling repairman problem with
+  profits: A novel variable neighborhood search approach", Information Sciences 507:108-123, 2020.
+  doi:10.1016/j.ins.2019.08.017
+
+### Follow-up (same session): files renamed
+
+> Rename the held karp files to subset DP
+
+- `raccoon/algorithms/held_karp.py` -> `raccoon/algorithms/subset_dp.py` and
+  `demo/src/core/heldKarp.ts` -> `demo/src/core/subsetDp.ts` (with `git mv`), plus every import and
+  file-name mention outside this log. Earlier entries above keep the old file names as history.
+- Unchanged on purpose: the algorithm key `"held_karp"` (config, CSV names, fixtures, CLI
+  `--only held_karp`, page element ids), the display name "Held-Karp", and the type names
+  `HeldKarpResult` / `HeldKarpStats`.
+
+
+### Follow-up (same session): everything renamed to Subset DP
+
+> Yes. Everything named held karp, rename to Subset DP
+
+- Renamed across the Python package, the website, tests, docs and VS Code launch configs: the algorithm key
+  `held_karp` -> `subset_dp` (config, registry, CLI `--only subset_dp`, page element ids, CSS variables,
+  fixture JSON), display name -> "Subset DP", `HELD_KARP_MAX_N` -> `SUBSET_DP_MAX_N`, types
+  `HeldKarpResult`/`HeldKarpStats` -> `SubsetDpResult`/`SubsetDpStats`, `race.heldKarp` -> `race.subsetDp`,
+  pseudocode title `SUBSET-DP-RACCOON`, and the `hk` abbreviations (`hkMs`, `HK_MAX_N`, test variables).
+- Kept on purpose: citations of M. Held and R. M. Karp (1962), sentences that describe their original TSP
+  algorithm (reworded to "the table of Held & Karp (1962)"), the dated "Updated 2026-11-12" lines in file
+  headers, and this log's earlier entries and verbatim prompts (history).
+- Any old `results/*held_karp*` CSV or PNG files from earlier benchmark runs will no longer be read; re-run
+  `python main.py benchmark` to regenerate them under the new name.

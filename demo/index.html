@@ -10,8 +10,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
-    <title>The Greedy Raccoon: Greedy vs. Held-Karp</title>
-    <meta name="description" content="COMP 422 algorithms project: a raccoon racing to eat food before it spoils. Watch a greedy algorithm race Held-Karp dynamic programming on the same map, and see how both scale." />
+    <title>The Greedy Raccoon: Greedy vs. Subset DP</title>
+    <meta name="description" content="COMP 422 algorithms project: a raccoon racing to eat food before it spoils. Watch a greedy algorithm race an exact subset dynamic program (Subset DP) on the same map, and see how both scale." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%233d3a36'/></svg>" />
   </head>
   <body>
@@ -22,7 +22,7 @@
         A raccoon leaves its den to eat every piece of food on a 100&nbsp;m × 100&nbsp;m map. Food loses calories every
         second it waits, and spoiled food is worth nothing (0 calories). <strong>Which order should it eat
         in?</strong> The straightforward <span class="algo-key" data-algo="greedy">Greedy</span> picks the best-looking
-        next meal each time. The clever <span class="algo-key" data-algo="held_karp">Held-Karp</span> dynamic program
+        next meal each time. The clever <span class="algo-key" data-algo="subset_dp">Subset DP</span> (an exact dynamic program)
         plans the whole route first and always finds the best one.
       </p>
       <nav class="jump" aria-label="On this page">
@@ -41,7 +41,7 @@
             <input id="n-range" type="range" min="2" max="16" step="1" aria-describedby="n-help" />
             <input id="n-input" type="number" min="2" max="16" step="1" inputmode="numeric" aria-label="Food items (exact number)" />
           </div>
-          <span id="n-help" class="help">Up to 16: Held-Karp's table has 2<sup>n</sup> rows</span>
+          <span id="n-help" class="help">Up to 16: Subset DP's table has 2<sup>n</sup> rows</span>
         </div>
         <div class="control">
           <label for="seed-input">Map seed</label>
@@ -72,7 +72,7 @@
 
       <section class="race" aria-label="The race">
         <article class="panel" id="panel-greedy" data-algo="greedy"></article>
-        <article class="panel" id="panel-held_karp" data-algo="held_karp"></article>
+        <article class="panel" id="panel-subset_dp" data-algo="subset_dp"></article>
       </section>
 
       <div class="scrubber">
@@ -113,7 +113,7 @@
             <h2 id="scaling-title">How they scale as the map grows</h2>
             <p class="section-lede">
               One map can be luck. Here both algorithms solve <strong>20 random maps of every size</strong>
-              (the same maps on every computer; 10 of them are timed). Held-Karp pays for optimality with
+              (the same maps on every computer; 10 of them are timed). Subset DP pays for optimality with
               exponential planning time, Θ(n²·2ⁿ) vs. Greedy's Θ(n²), but Greedy's shortfall in calories
               <strong>grows with n</strong> and its chance of finding the best route falls to zero.
             </p>
@@ -130,11 +130,11 @@
         <div class="chart-grid two">
           <figure class="card chart-card">
             <figcaption>
-              <h3>Extra calories Held-Karp banks over Greedy</h3>
+              <h3>Extra calories Subset DP banks over Greedy</h3>
               <p class="help">Each dot is one map; the line is the average for that size. Higher = Greedy left more food value behind.</p>
             </figcaption>
             <div class="chart-wrap">
-              <canvas id="chart-quality" tabindex="0" role="img" aria-label="Scatterplot of extra calories Held-Karp's route earns over Greedy's, for map sizes 2 to 14. The numbers are in the table below the chart."></canvas>
+              <canvas id="chart-quality" tabindex="0" role="img" aria-label="Scatterplot of extra calories Subset DP's route earns over Greedy's, for map sizes 2 to 14. The numbers are in the table below the chart."></canvas>
               <div class="tooltip" role="status" hidden></div>
             </div>
             <details><summary>Show the numbers</summary><div class="table-scroll"><table id="table-quality"></table></div></details>
@@ -143,7 +143,7 @@
           <figure class="card chart-card">
             <figcaption>
               <h3>Maps where Greedy found the best route</h3>
-              <p class="help">Share of the 20 maps of each size where Greedy's score equals Held-Karp's optimum.</p>
+              <p class="help">Share of the 20 maps of each size where Greedy's score equals Subset DP's optimum.</p>
             </figcaption>
             <div class="chart-wrap">
               <canvas id="chart-optimal" tabindex="0" role="img" aria-label="Bar chart of the percentage of maps where Greedy's route is optimal, by map size. The numbers are in the table below the chart."></canvas>
@@ -157,12 +157,12 @@
           <div class="card-head">
             <figcaption>
               <h3>Planning time, log scale</h3>
-              <p class="help">Each step up the axis is 10× slower. Dots = single maps, lines = typical time (geometric mean). Held-Karp's curve bends upward (×2 per extra item, plus the n² factor); Greedy stays nearly flat at this scale. That is the price of always finding the best route.</p>
+              <p class="help">Each step up the axis is 10× slower. Dots = single maps, lines = typical time (geometric mean). Subset DP's curve bends upward (×2 per extra item, plus the n² factor); Greedy stays nearly flat at this scale. That is the price of always finding the best route.</p>
             </figcaption>
             <ul class="legend" id="legend-time" aria-label="Legend"></ul>
           </div>
           <div class="chart-wrap">
-            <canvas id="chart-time" tabindex="0" role="img" aria-label="Planning time in milliseconds against map size, log scale, for Greedy and Held-Karp. The numbers are in the table below the chart."></canvas>
+            <canvas id="chart-time" tabindex="0" role="img" aria-label="Planning time in milliseconds against map size, log scale, for Greedy and Subset DP. The numbers are in the table below the chart."></canvas>
             <div class="tooltip" role="status" hidden></div>
           </div>
           <details><summary>Show the numbers</summary><div class="table-scroll"><table id="table-time"></table></div></details>
@@ -181,11 +181,11 @@
           </figure>
           <figure class="card chart-card">
             <figcaption>
-              <h3><span class="algo-key" data-algo="held_karp">Held-Karp</span> · Θ(n²·2ⁿ)</h3>
-              <p class="help" id="fit-held_karp">Exact, exponential.</p>
+              <h3><span class="algo-key" data-algo="subset_dp">Subset DP</span> · Θ(n²·2ⁿ)</h3>
+              <p class="help" id="fit-subset_dp">Exact, exponential.</p>
             </figcaption>
             <div class="chart-wrap">
-              <canvas id="chart-held_karp" tabindex="0" role="img" aria-label="Held-Karp planning time against map size from 2 to 14 items, with an n squared times 2 to the n trendline."></canvas>
+              <canvas id="chart-subset_dp" tabindex="0" role="img" aria-label="Subset DP planning time against map size from 2 to 14 items, with an n squared times 2 to the n trendline."></canvas>
               <div class="tooltip" role="status" hidden></div>
             </div>
           </figure>
@@ -249,17 +249,19 @@
           </article>
 
           <article class="card prose">
-            <h3><span class="algo-key" data-algo="held_karp">Held-Karp</span> · clever</h3>
-            <p>The Held-Karp dynamic program (Held &amp; Karp 1962; Bellman 1962) fills a table with one cell per
+            <h3><span class="algo-key" data-algo="subset_dp">Subset DP</span> · clever</h3>
+            <p>Subset DP fills the table that Held &amp; Karp (1962) and Bellman (1962) wrote for the traveling
+              salesman, and that Wu et al. (2004) and Roberti &amp; Mingozzi (2014) use to solve the traveling
+              repairman problem exactly. It has one cell per
               <em>(set of items S, item j eaten last)</em>: the cheapest way to eat exactly S, ending at j. A cell only
               needs the cells for <em>S − {j}</em>, so filling small sets first gives every cell its answer, and the full
               set gives the best route. It shares work between all orders that visit the same set, instead of trying
               all n! orders one by one.</p>
             <p>The one change for spoiling food: what it costs to finish a route depends on the clock, so a cell keeps the
-              few <em>(time, loss)</em> labels that no other label beats on both, the two-dimensional labels used by DP
-              for the TSP with time windows (Dumas et al. 1995). If food never spoiled, each cell would hold exactly one
-              label: the textbook table.</p>
-<pre><code>HELD-KARP-RACCOON(items, den, speed)
+              few <em>(time, loss)</em> labels that no other label beats on both, as in the forward label-propagation
+              DP of Tsitsiklis (1992) for repairman problems, which tracks both time and waiting time. If food never
+              spoiled, each cell would hold exactly one label: the table of Wu et al.</p>
+<pre><code>SUBSET-DP-RACCOON(items, den, speed)
  1  T[i][j] = travel time i → j;  T0[j] = den → j
  2  for each item j:  C[{j}][j] = { (T0[j], loss_j(T0[j])) }
  3  for each subset S, smallest first (|S| ≥ 2)
@@ -274,7 +276,7 @@
 11  follow back-pointers from best to rebuild the route
 12  return route</code></pre>
             <dl class="complexity">
-              <div><dt>Time</dt><dd>Θ(n²·2ⁿ) for the textbook table: line 3 runs over 2ⁿ sets and lines 4 and 6 over n
+              <div><dt>Time</dt><dd>Θ(n²·2ⁿ) for the one-value table (Wu et al. 2004): line 3 runs over 2ⁿ sets and lines 4 and 6 over n
                 items each. With labels it is O(n²·2ⁿ·F), where F is the longest label list (a small number on these
                 maps, shown in the results table; the fit above treats it as a constant).</dd></div>
               <div><dt>Memory</dt><dd>Θ(n·2ⁿ) cells (×F labels), which is why the race stops at 16 items.</dd></div>
@@ -291,11 +293,17 @@
             (wall-clock, averaged over repeated runs), so they differ from the Python benchmark numbers. Maps here use a
             different random number generator than Python, so a seed on this page is not the same map as that seed in
             <code>python main.py demo</code>.</p>
-          <p>References: M. Held and R. M. Karp, "A dynamic programming approach to sequencing problems",
+          <p>References: B. Y. Wu, Z.-N. Huang and F.-J. Zhan, "Exact algorithms for the minimum latency problem",
+            <em>Information Processing Letters</em> 92(6):303–309, 2004 (the exact DP for the repairman problem) ·
+            R. Roberti and A. Mingozzi, "Dynamic ng-path relaxation for the delivery man problem",
+            <em>Transportation Science</em> 48(3):413–424, 2014 (the same recursion, with dominance rules) ·
+            J. N. Tsitsiklis, "Special cases of traveling salesman and repairman problems with time windows",
+            <em>Networks</em> 22(3):263–282, 1992 (label propagation over time and waiting time) · J. Pei, N. Mladenović,
+            D. Urošević, J. Brimberg and X. Liu, "Solving the traveling repairman problem with profits: A novel variable
+            neighborhood search approach", <em>Information Sciences</em> 507:108–123, 2020 (scores that stop at zero) ·
+            M. Held and R. M. Karp, "A dynamic programming approach to sequencing problems",
             <em>J. SIAM</em> 10(1):196–210, 1962 · R. Bellman, "Dynamic programming treatment of the travelling salesman
-            problem", <em>J. ACM</em> 9(1):61–63, 1962 · Y. Dumas, J. Desrosiers, E. Gelinas and M. M. Solomon, "An optimal
-            algorithm for the traveling salesman problem with time windows", <em>Operations Research</em> 43(2):367–371,
-            1995 · D. J. Rosenkrantz, R. E. Stearns and P. M. Lewis II, "An analysis of several heuristics for the traveling
+            problem", <em>J. ACM</em> 9(1):61–63, 1962 · D. J. Rosenkrantz, R. E. Stearns and P. M. Lewis II, "An analysis of several heuristics for the traveling
             salesman problem", <em>SIAM J. Computing</em> 6(3):563–581, 1977 · W. E. Smith, "Various optimizers for single-stage
             production", <em>Naval Research Logistics Quarterly</em> 3(1–2):59–66, 1956 (ratio rule) · A. Blum et al., "The minimum
             latency problem", <em>STOC</em> 1994, 163–171.</p>

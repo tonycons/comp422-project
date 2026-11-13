@@ -7,7 +7,7 @@
 Registry of algorithms.
 
 The benchmark, the plots and the animation look algorithms up here by key
-("greedy", "held_karp", ...). To add a new algorithm, write a module with the
+("greedy", "subset_dp", ...). To add a new algorithm, write a module with the
 same names (KEY, NAME, TAGLINE, TIME_COMPLEXITY, MEMORY_COMPLEXITY, MAX_N,
 GROWTH_LABEL, growth, solve) and add it to the tuple at the bottom.
 
@@ -17,7 +17,7 @@ GROWTH_LABEL, growth, solve) and add it to the tuple at the bottom.
     two_opt          greedy + 2-opt        local search
     balas_simonetti  greedy + linear-time restricted DP
     vnd              greedy + 2-opt <-> DP, taking turns
-    held_karp        O(n^2 * 2^n * F)      exact optimum, small maps only
+    subset_dp        O(n^2 * 2^n * F)      exact optimum, small maps only
     brute_force      Theta(n * n!)         checker for the tests
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, Optional
 
 from ..problem import Instance, Solution
-from . import balas_simonetti, brute_force, greedy, greedy_kd, held_karp, hilbert, two_opt, vnd
+from . import balas_simonetti, brute_force, greedy, greedy_kd, subset_dp, hilbert, two_opt, vnd
 
 
 @dataclass(frozen=True)
@@ -50,12 +50,12 @@ def _info(module) -> AlgorithmInfo:
 
 ALGORITHMS: Dict[str, AlgorithmInfo] = {
     info.key: info for info in map(_info, (hilbert, greedy, greedy_kd, two_opt,
-                                           balas_simonetti, vnd, held_karp, brute_force))
+                                           balas_simonetti, vnd, subset_dp, brute_force))
 }
 
-MAIN_ALGORITHMS = ("greedy", "held_karp")    # the two in our original README
+MAIN_ALGORITHMS = ("greedy", "subset_dp")    # the two in our original README
 BENCHMARK_ALGORITHMS = ("hilbert", "greedy", "greedy_kd", "two_opt", "balas_simonetti", "vnd",
-                        "held_karp")         # what `python main.py benchmark` runs by default
+                        "subset_dp")         # what `python main.py benchmark` runs by default
 
 
 def plain_text(math_text: str) -> str:

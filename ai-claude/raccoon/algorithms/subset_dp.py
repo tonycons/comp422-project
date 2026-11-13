@@ -5,8 +5,8 @@
 #  Human edits: please tag changed lines with   # [EDIT: <your name>]
 # =============================================================================
 """
-CLEVER ALGORITHM: Held-Karp dynamic programming (modified for the raccoon)
-==========================================================================
+CLEVER ALGORITHM: Subset DP (subset dynamic programming with label dominance)
+=============================================================================
 
 Instead of deciding one step at a time, the raccoon plans the WHOLE route
 before leaving the den and is guaranteed to find the best possible score.
@@ -16,7 +16,7 @@ Step 1 - turn "score" into "loss"  (see problem.py)
     loss_i(t)   = w_i * min(t, shelf_life_i)       (spoiled food is worth 0)
     So we MINIMIZE the total loss.
 
-Step 2 - the table (classic Held-Karp shape)
+Step 2 - the table (the (set, last item) shape of Held & Karp 1962)
     One cell per (S, j): "eat exactly the items in set S, finishing at item j".
     Sets are stored as bitmasks: bit k of the integer S is 1 if item k is in S.
 
@@ -36,7 +36,7 @@ Step 3 - why a cell holds a small LIST instead of one number
 
 Pseudocode (the [Lx] tags in the code below point back to these lines)
 ----------
-    HELD-KARP-RACCOON(items, den, speed)
+    SUBSET-DP-RACCOON(items, den, speed)
      1  T[i][j] <- travel time i -> j for every pair;  T0[j] <- travel time den -> j
      2  for each item j:  front[{j}][j] <- { (T0[j], loss_j(T0[j])) }
      3  for each subset S, smallest first (|S| >= 2)
@@ -55,7 +55,7 @@ Running time:  O(n^2 * 2^n * F log(nF)),   F = the largest front size
     items, and line 7 over at most F labels: 2^n * n * n * F candidate labels,
     plus sorting them on line 9. On our random maps F stays small (the solver
     reports it as notes["max_front"]), so it behaves like the classic
-    Theta(n^2 * 2^n) Held-Karp times a small constant.
+    one-value-per-cell Theta(n^2 * 2^n) table times a small constant.
 Memory:  O(n * 2^n * F)  for the fronts.
 
 Why it is correct: optimal substructure plus dominance. A best route that
@@ -67,18 +67,43 @@ tries every i and every kept label, so the optimum survives to line 10.
 Filling smaller sets first (line 3) guarantees front[prev] is complete
 before it is used, because S - {j} < S as an integer.
 
-Compared with brute force (all n! orders, Theta(n * n!)), Held-Karp shares
+Compared with brute force (all n! orders, Theta(n * n!)), Subset DP shares
 work between orders that visit the same SET of items. Compared with Greedy
 (Theta(n^2)) it is much slower, but it is always optimal.
 
-Sources (verify yourselves before citing - course rule):
+Sources (verify yourselves before citing - course rule)
+Updated 2026-11-13 (Claude): Held & Karp's 1962 DP is a TSP algorithm; the first four
+sources (read from the group's scientific_sources/ folder) cover the REPAIRMAN problem.
+  B. Y. Wu, Z.-N. Huang, F.-J. Zhan, "Exact algorithms for the minimum latency
+    problem", Information Processing Letters 92(6):303-309, 2004.
+    doi:10.1016/j.ipl.2004.09.009   (Section 3.1: the O(n^2 * 2^n) DP over
+    "configurations" (visited set, last vertex) for the repairman objective:
+    our table of cells (S, j))
+  R. Roberti and A. Mingozzi, "Dynamic ng-path relaxation for the delivery man
+    problem", Transportation Science 48(3):413-424, 2014.
+    doi:10.1287/trsc.2013.0474   (Section 2: the same recursion F(S, i), "a
+    well-known DP recursion"; Section 5: an exact method with "standard
+    dominance rules")
+  J. N. Tsitsiklis, "Special cases of traveling salesman and repairman problems
+    with time windows", Networks 22(3):263-282, 1992. doi:10.1002/net.3230220305
+    (Section VIII, Theorems 8-9: forward DP over states (i, S) that propagates
+    labels and tracks both time and waiting time: why a cell keeps a list)
+  J. Pei, N. Mladenovic, D. Urosevic, J. Brimberg, X. Liu, "Solving the
+    traveling repairman problem with profits: A novel variable neighborhood
+    search approach", Information Sciences 507:108-123, 2020.
+    doi:10.1016/j.ins.2019.08.017   (Section 2.1: profit p - t if p > t, else 0;
+    our score is the weighted version, w * max(0, shelf_life - t). A heuristics
+    paper: it supports the problem, not this algorithm.)
   M. Held and R. M. Karp, "A dynamic programming approach to sequencing
     problems", J. SIAM 10(1):196-210, 1962. doi:10.1137/0110015
+    (origin of the (set, last) table, for the TSP)
   R. Bellman, "Dynamic programming treatment of the travelling salesman
     problem", J. ACM 9(1):61-63, 1962.
   A. Blum, P. Chalasani, D. Coppersmith, W. Pulleyblank, P. Raghavan, M. Sudan,
     "The minimum latency problem", STOC 1994, pp. 163-171.
     doi:10.1145/195058.195125   (defines the traveling repairman / latency objective)
+Not from any of these: dominance Rule 2 (pareto.py), the per-item weights, and
+the O(n^2 * 2^n * F) bound with label lists are our own.
 """
 from __future__ import annotations
 
@@ -86,8 +111,8 @@ from __future__ import annotations
 from ..problem import Instance, Solution, distance, evaluate_route
 from .pareto import live_weight_function, pareto_front
 
-KEY = "held_karp"
-NAME = "Held-Karp DP"
+KEY = "subset_dp"
+NAME = "Subset DP"
 TAGLINE = "plans the whole route before leaving"
 TIME_COMPLEXITY = "O(n²·2ⁿ·F)"     # F = largest Pareto front (small in practice)
 MEMORY_COMPLEXITY = "O(n·2ⁿ·F)"

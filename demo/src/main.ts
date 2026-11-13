@@ -10,16 +10,16 @@
  *
  * The race animation has two phases:
  *   1. PLANNING - each panel's bar shows how long its algorithm took to compute its
- *      route; the slowest bar fills PLANNING_SECONDS of screen time. Held-Karp's map
+ *      route; the slowest bar fills PLANNING_SECONDS of screen time. Subset DP's map
  *      shows the best partial route its table has found so far, and the strip under
- *      each map lights up the work done (Greedy's comparisons, Held-Karp's table rows).
+ *      each map lights up the work done (Greedy's comparisons, Subset DP's table rows).
  *   2. WALKING  - both raccoons leave the den together and eat along their routes.
  */
 import "./style.css";
 import * as config from "./core/config";
 import { MAX_SEED, randomSeed } from "./core/generator";
 import * as greedy from "./core/greedy";
-import * as heldKarp from "./core/heldKarp";
+import * as subsetDp from "./core/subsetDp";
 import { isSpoiledAt, type Solution } from "./core/problem";
 import { makeRace, type Race } from "./core/race";
 import {
@@ -35,12 +35,12 @@ import { Timeline, type Series } from "./ui/timeline";
 import { WorkView } from "./ui/workView";
 
 const N_MIN = 2;
-const N_MAX = heldKarp.MAX_N;
+const N_MAX = subsetDp.MAX_N;
 const DEFAULT_N = 12;
-const SLOW_N = 15;   // Held-Karp needs about a second from here on
-type RaceKey = "greedy" | "held_karp";
-const INFO = { greedy: greedy.INFO, held_karp: heldKarp.INFO } as const;
-const KEYS: RaceKey[] = ["greedy", "held_karp"];
+const SLOW_N = 15;   // Subset DP needs about a second from here on
+type RaceKey = "greedy" | "subset_dp";
+const INFO = { greedy: greedy.INFO, subset_dp: subsetDp.INFO } as const;
+const KEYS: RaceKey[] = ["greedy", "subset_dp"];
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -104,7 +104,7 @@ function buildPanel(key: RaceKey): Panel {
     };
 }
 
-const panels: Record<RaceKey, Panel> = { greedy: buildPanel("greedy"), held_karp: buildPanel("held_karp") };
+const panels: Record<RaceKey, Panel> = { greedy: buildPanel("greedy"), subset_dp: buildPanel("subset_dp") };
 const timeline = new Timeline($<HTMLCanvasElement>("timeline"), $("tooltip"));
 
 // ---------------------------------------------------------------------------
@@ -170,11 +170,11 @@ function startRace(n: number, seed: number): void {
     setTimeout(() => {
         const race = makeRace(n, seed);
         state.race = race;
-        state.maxT = Math.max(race.greedy.solution.totalTime, race.heldKarp.solution.totalTime, 1e-9);
-        state.maxMs = Math.max(race.greedy.ms, race.heldKarp.ms);
+        state.maxT = Math.max(race.greedy.solution.totalTime, race.subsetDp.solution.totalTime, 1e-9);
+        state.maxMs = Math.max(race.greedy.ms, race.subsetDp.ms);
         const data: Record<RaceKey, PanelData> = {
             greedy: { key: "greedy", instance: race.instance, solution: race.greedy.solution, decisions: race.greedy.decisions },
-            held_karp: { key: "held_karp", instance: race.instance, solution: race.heldKarp.solution, snapshots: race.heldKarp.snapshots },
+            subset_dp: { key: "subset_dp", instance: race.instance, solution: race.subsetDp.solution, snapshots: race.subsetDp.snapshots },
         };
         for (const key of KEYS) {
             const panel = panels[key];
@@ -183,10 +183,10 @@ function startRace(n: number, seed: number): void {
             panel.canvas.setAttribute("aria-label",
                 `Map of ${n} food items with the ${INFO[key].name} raccoon's route. Results are in the table below.`);
         }
-        const st = race.heldKarp.stats;
+        const st = race.subsetDp.stats;
         panels.greedy.workCaption.textContent =
             `Work: ${fmtInt((n * (n + 1)) / 2)} comparisons (a column per decision, a square per item still left)`;
-        panels.held_karp.workCaption.textContent =
+        panels.subset_dp.workCaption.textContent =
             `Table: ${fmtInt(2 ** n)} sets, a square each (darker = more items) · ${fmtInt(st.cells)} cells · ${fmtInt(st.candidates)} labels built`;
         timeline.setSeries(KEYS.map((key) => toSeries(key, data[key].solution)));
         renderResults(race);
@@ -242,7 +242,7 @@ function render(): void {
 
     for (const key of KEYS) {
         const panel = panels[key];
-        const result = key === "greedy" ? race.greedy : race.heldKarp;
+        const result = key === "greedy" ? race.greedy : race.subsetDp;
         const own = planning ? Math.min(1, (p * state.maxMs) / Math.max(result.ms, 1e-12)) : 1;
         panel.bar.style.width = `${own * 100}%`;
         panel.caption.textContent = planCaption(key, own);
@@ -294,7 +294,7 @@ function planCaption(key: RaceKey, own: number): string {
     if (own >= 1) {
         return "Planned the whole route before leaving (dashed = rest of plan)";
     }
-    const frame = race.heldKarp.snapshots ? MapView.snapshotAt(race.heldKarp.snapshots, own) : null;
+    const frame = race.subsetDp.snapshots ? MapView.snapshotAt(race.subsetDp.snapshots, own) : null;
     const done = Math.round(own * 2 ** n);
     return frame
         ? `Filling the table: ${fmtInt(done)} of ${fmtInt(2 ** n)} sets. Line = cheapest way to eat the ${frame.route.length} bright items`
@@ -303,7 +303,7 @@ function planCaption(key: RaceKey, own: number): string {
 
 function renderResults(race: Race): void {
     const g = race.greedy.solution;
-    const h = race.heldKarp.solution;
+    const h = race.subsetDp.solution;
     const summary = $("summary");
     summary.replaceChildren();
     const add = (text: string, strong = false) => {
@@ -313,15 +313,15 @@ function renderResults(race: Race): void {
         }
         summary.appendChild(el);
     };
-    const ratio = race.heldKarp.ms / race.greedy.ms;
+    const ratio = race.subsetDp.ms / race.greedy.ms;
     const extra = h.totalScore - g.totalScore;
     if (extra < 1e-6) {
-        add("On this map Greedy happened to find a best route too, so both score the same; Held-Karp ");
+        add("On this map Greedy happened to find a best route too, so both score the same; Subset DP ");
         add("proves", true);
         add(` no order does better. It took ${fmtRatio(ratio)} as long to plan. Try more items: Greedy's luck runs out fast.`);
     } else {
         const less = g.spoilageLoss > 0 ? (extra / g.spoilageLoss) * 100 : 0;
-        add("Held-Karp banked ");
+        add("Subset DP banked ");
         add(`${fmtInt(extra)} more calories`, true);
         add(" than Greedy (");
         add(`${fmtPct(less)} less`, true);
@@ -339,10 +339,10 @@ function renderResults(race: Race): void {
         head.appendChild(th);
     }
     const body = table.createTBody();
-    const st = race.heldKarp.stats;
+    const st = race.subsetDp.stats;
     for (const [key, s, ms, extraCol] of [
         ["greedy", g, race.greedy.ms, "–"],
-        ["held_karp", h, race.heldKarp.ms, `${fmtInt(st.cells)} cells, F = ${st.maxFront}`],
+        ["subset_dp", h, race.subsetDp.ms, `${fmtInt(st.cells)} cells, F = ${st.maxFront}`],
     ] as const) {
         const row = body.insertRow();
         const th = document.createElement("th");
@@ -398,7 +398,7 @@ function renderRoutes(): void {
     }
     const body = table.createTBody();
     const g = race.greedy.solution;
-    const h = race.heldKarp.solution;
+    const h = race.subsetDp.solution;
     for (let k = 0; k < g.order.length; k++) {
         const row = body.insertRow();
         row.insertCell().textContent = String(k + 1);
@@ -433,7 +433,7 @@ const charts = {
         { xLabel: X_LABEL, yLabel: "planning time (ms)", formatY: fmtMs, logY: true, height: 320, labelSpace: 104 }),
     greedy: new ScatterChart($("chart-greedy"), chartTip("chart-greedy"),
         { xLabel: "food items (n)", yLabel: "time (ms)", formatY: fmtMs, height: 220 }),
-    held_karp: new ScatterChart($("chart-held_karp"), chartTip("chart-held_karp"),
+    subset_dp: new ScatterChart($("chart-subset_dp"), chartTip("chart-subset_dp"),
         { xLabel: "food items (n)", yLabel: "time (ms)", formatY: fmtMs, height: 220 }),
 };
 
@@ -450,7 +450,7 @@ const pts = (list: readonly TimePoint[]) => list.map((p) => ({ x: p.n, y: p.ms }
 function updateScalingCharts(): void {
     const d = scaling.data;
     charts.quality.setSeries([{
-        name: "Held-Karp − Greedy", color: ALGORITHM_COLORS.held_karp, kind: "scatter",
+        name: "Subset DP − Greedy", color: ALGORITHM_COLORS.subset_dp, kind: "scatter",
         points: d.quality.map((q) => ({ x: q.n, y: q.extraCalories })),
     }]);
     charts.optimal.setSeries([{
@@ -461,7 +461,7 @@ function updateScalingCharts(): void {
     // least-squares trendlines of each Theta bound (Greedy on its large maps, where n^2 shows)
     const fits = {
         greedy: fitGrowth(d.greedyLarge, GROWTH.greedy.f),
-        held_karp: fitGrowth(d.time.held_karp, GROWTH.held_karp.f),
+        subset_dp: fitGrowth(d.time.subset_dp, GROWTH.subset_dp.f),
     };
     const fitFor = (key: keyof typeof fits) => {
         const f = fits[key];
@@ -476,7 +476,7 @@ function updateScalingCharts(): void {
     charts.time.setSeries(timeSeries.filter((s) => s.points.length > 0));
 
     charts.greedy.setSeries([{ name: "Greedy", color: ALGORITHM_COLORS.greedy, kind: "scatter", points: pts(d.greedyLarge), fit: fitFor("greedy") }]);
-    charts.held_karp.setSeries([{ name: "Held-Karp", color: ALGORITHM_COLORS.held_karp, kind: "scatter", points: pts(d.time.held_karp), fit: fitFor("held_karp") }]);
+    charts.subset_dp.setSeries([{ name: "Subset DP", color: ALGORITHM_COLORS.subset_dp, kind: "scatter", points: pts(d.time.subset_dp), fit: fitFor("subset_dp") }]);
     for (const key of KEYS) {
         const f = fits[key];
         if (f) {
@@ -503,10 +503,10 @@ function renderTiles(): void {
     const top = d.quality.filter((p) => p.n === nTop);
     const optimalTop = top.filter((p) => p.greedyOptimal).length;
     const tiles: [string, string, string][] = [
-        [`+${fmtInt(mean(extras))} cal`, `Held-Karp's average lead over Greedy at n = ${nTop}`,
+        [`+${fmtInt(mean(extras))} cal`, `Subset DP's average lead over Greedy at n = ${nTop}`,
             `${fmtPct(mean(top.map((p) => p.extraPercent)))} of all the food on the map (at n = ${q[0][0]}: ${fmtInt(mean(q[0][1]))} cal)`],
         [`${optimalTop} of ${top.length}`, `maps at n = ${nTop} where Greedy found the best route`,
-            "Held-Karp finds it on every map, by construction"],
+            "Subset DP finds it on every map, by construction"],
     ];
     tiles.push([`${fmtPct(mean(top.map((p) => p.extraSpoilagePercent)))} more`,
         `calories Greedy lets spoil than the best route, at n = ${nTop}`,
@@ -536,10 +536,10 @@ function renderScalingTables(): void {
     fillTable($("table-optimal"), ["n", "Maps", "Greedy optimal", "Share"],
         qo.map(([n, v]) => [String(n), String(v.length), String(v.reduce((a, b) => a + b, 0)), `${fmtInt(mean(v) * 100)}%`]));
     const g = new Map(byN(d.time.greedy, (p) => p.ms));
-    const h = new Map(byN(d.time.held_karp, (p) => p.ms));
+    const h = new Map(byN(d.time.subset_dp, (p) => p.ms));
     const sizes = [...new Set([...g.keys(), ...h.keys()])].sort((x, y) => x - y);
     const cell = (m: Map<number, number[]>, n: number) => (m.has(n) ? fmtMs(mean(m.get(n)!)) : "–");
-    fillTable($("table-time"), ["n", "Greedy (mean)", "Held-Karp (mean)"], [
+    fillTable($("table-time"), ["n", "Greedy (mean)", "Subset DP (mean)"], [
         ...sizes.map((n) => [String(n), cell(g, n), cell(h, n)]),
         ...byN(d.greedyLarge, (p) => p.ms).map(([n, v]) => [fmtInt(n), fmtMs(mean(v)), "–"]),
     ]);
@@ -615,7 +615,7 @@ function setBusy(busy: boolean, n: number): void {
     document.body.style.cursor = busy ? "progress" : "";
     if (busy) {
         panels.greedy.caption.textContent = "Solving…";
-        panels.held_karp.caption.textContent = n >= SLOW_N ? `Solving… (2^${n} sets: about a second)` : "Solving…";
+        panels.subset_dp.caption.textContent = n >= SLOW_N ? `Solving… (2^${n} sets: about a second)` : "Solving…";
     }
     for (const el of [nRange, nInput, seedInput, $("new-map")]) {
         (el as HTMLInputElement).disabled = busy;
@@ -711,7 +711,7 @@ for (const key of KEYS) {
     observer.observe(panels[key].workCanvas);
 }
 observer.observe($("timeline"));
-for (const id of ["chart-quality", "chart-optimal", "chart-time", "chart-greedy", "chart-held_karp"]) {
+for (const id of ["chart-quality", "chart-optimal", "chart-time", "chart-greedy", "chart-subset_dp"]) {
     observer.observe($(id));
 }
 
