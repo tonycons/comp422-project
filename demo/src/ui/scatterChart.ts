@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-12,
-//  at the request of George Rule. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of George Rule. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**

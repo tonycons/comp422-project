@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-12,
-//  at the request of George Rule. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of George Rule. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -22,8 +22,8 @@
  * responsive and the charts can fill in as results arrive.
  */
 import { generateInstance } from "./generator";
-import * as greedy from "./greedy";
-import * as subsetDp from "./subsetDp";
+import * as greedy from "../solutions/greedy";
+import * as subsetDp from "../solutions/subsetDp";
 import { totalCalories } from "./problem";
 import { timeIt } from "./race";
 
@@ -137,7 +137,7 @@ export async function runScaling(
 
 /**
  * f(n) for each algorithm's Theta bound.
- *   Greedy:    n^2         (lines 9-14 of its pseudocode run n(n+1)/2 times)
+ *   Greedy:    n^2
  *   Subset DP: n^2 * 2^n   (Held & Karp 1962; for the repairman objective Wu et al. 2004; the label-list
  *                           factor F is small and treated as a constant)
  */

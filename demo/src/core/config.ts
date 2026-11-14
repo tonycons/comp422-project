@@ -1,13 +1,13 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * ALL THE KNOBS IN ONE PLACE  (TypeScript copy of raccoon/config.py).
+ * ALL THE KNOBS IN ONE PLACE.
  *
- * Keep these numbers in sync with the Python version -- the parity test
- * (tests/parity.test.ts) fails if the two stop producing the same routes.
+ * Changing the world or the food types changes the routes, so tests/regression.test.ts
+ * will fail until its reference routes are updated on purpose.
  */
 import type { FoodType } from "./problem";
 

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   AI-GENERATED FILE - written by Claude (Anthropic AI), 2026-11-03,
-  at the request of tonycons. See ../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+  at the request of tonycons. See ../AI_CONTRIBUTIONS.md for the full log.
   Updated 2026-11-12 (Claude): Greedy vs. Held-Karp, plus the "How they scale" charts.
   Human edits: please tag changed lines with an HTML comment  [EDIT: your name]
 -->
@@ -190,8 +190,8 @@
             </div>
           </figure>
         </div>
-        <p class="help note">Times are wall-clock in your browser (browsers cannot read CPU time) and change from run to run;
-          the graded CPU-time benchmark is the Python one (<code>python main.py benchmark</code>). The calorie results never change:
+        <p class="help note">Times are wall-clock in your browser (browsers cannot read CPU time) and change from run to run.
+          The calorie results never change:
           they depend only on the maps.</p>
       </section>
 
@@ -215,98 +215,40 @@
         <div class="algo-cards">
           <article class="card prose">
             <h3><span class="algo-key" data-algo="greedy">Greedy</span> · straightforward</h3>
-            <p>Standing where it is, the raccoon scores every uneaten item and walks to the most attractive one, then
-              repeats: the nearest-neighbor heuristic for the TSP (Rosenkrantz, Stearns &amp; Lewis 1977), ranked by attractiveness instead of distance. Attractiveness is Smith's ratio rule: <em>calories lost per second of waiting ÷ seconds of
-              walking to it</em>. Food that would already be spoiled on arrival ranks below all fresh food (nearest
-              first). It never looks more than one step ahead, so it is fast but can be fooled: eating a nearby donut
-              first can let a far-away fish spoil.</p>
-<pre><code>GREEDY-RACCOON(items, den, speed)
- 1  here = den
- 2  clock = 0
- 3  remaining = all n items
- 4  route = empty list
- 5  while remaining is not empty
- 6      best = NIL
- 7      best_value = −∞
- 8      for each item j in remaining
- 9          travel = distance(here, j) / speed
-10          value = ATTRACTIVENESS(j, travel, clock + travel)
-11          if value > best_value
-12              best = j
-13              best_value = value
-14              best_travel = travel
-15      clock = clock + best_travel
-16      here = position of best
-17      remove best from remaining
-18      append best to route
-19  return route</code></pre>
+            <p>Standing where it is, the raccoon walks to the most attractive uneaten item, then repeats: the
+              nearest-neighbor heuristic (Rosenkrantz, Stearns &amp; Lewis 1977), ranked by Smith's ratio rule
+              (calories lost per second of waiting ÷ seconds of walking) instead of distance. It never looks past the
+              next meal, so it is fast but can be fooled.</p>
             <dl class="complexity">
-              <div><dt>Time</dt><dd>Θ(n²): the loop on line 5 runs n times and the loop on line 8 runs over the
-                n, n−1, …, 1 remaining items, so lines 9–14 run n(n+1)/2 times.</dd></div>
-              <div><dt>Memory</dt><dd>Θ(n): the remaining list and the route.</dd></div>
-              <div><dt>Optimal?</dt><dd>No. In the charts above it misses the best route on almost every map with 10+ items.</dd></div>
+              <div><dt>Time</dt><dd>Θ(n²)</dd></div>
+              <div><dt>Memory</dt><dd>Θ(n)</dd></div>
+              <div><dt>Optimal?</dt><dd>No</dd></div>
             </dl>
           </article>
 
           <article class="card prose">
             <h3><span class="algo-key" data-algo="subset_dp">Subset DP</span> · clever</h3>
-            <p>Subset DP fills the table that Held &amp; Karp (1962) and Bellman (1962) wrote for the traveling
-              salesman, and that Wu et al. (2004) and Roberti &amp; Mingozzi (2014) use to solve the traveling
-              repairman problem exactly. It has one cell per
-              <em>(set of items S, item j eaten last)</em>: the cheapest way to eat exactly S, ending at j. A cell only
-              needs the cells for <em>S − {j}</em>, so filling small sets first gives every cell its answer, and the full
-              set gives the best route. It shares work between all orders that visit the same set, instead of trying
-              all n! orders one by one.</p>
-            <p>The one change for spoiling food: what it costs to finish a route depends on the clock, so a cell keeps the
-              few <em>(time, loss)</em> labels that no other label beats on both, as in the forward label-propagation
-              DP of Tsitsiklis (1992) for repairman problems, which tracks both time and waiting time. If food never
-              spoiled, each cell would hold exactly one label: the table of Wu et al.</p>
-<pre><code>SUBSET-DP-RACCOON(items, den, speed)
- 1  T[i][j] = travel time i → j;  T0[j] = den → j
- 2  for each item j:  C[{j}][j] = { (T0[j], loss_j(T0[j])) }
- 3  for each subset S, smallest first (|S| ≥ 2)
- 4      for each item j in S            ▹ eaten last
- 5          prev = S − {j};  cand = { }
- 6          for each item i in prev     ▹ eaten just before j
- 7              for each label (t, c) in C[prev][i]
- 8                  t′ = t + T[i][j]
-                    add (t′, c + loss_j(t′)) to cand
- 9          C[S][j] = PARETO-FRONT(cand) ▹ drop dominated labels
-10  best = cheapest label in any C[ALL][j]
-11  follow back-pointers from best to rebuild the route
-12  return route</code></pre>
+            <p>A table with one cell per <em>(set of items, item eaten last)</em>, filled for small sets first: the exact
+              dynamic program for the traveling repairman problem (Wu et al. 2004; Roberti &amp; Mingozzi 2014). Because
+              spoiled food stops losing calories, each cell keeps a short list of (time, calories lost) labels instead
+              of one number (Tsitsiklis 1992) and drops the ones that can never win.</p>
             <dl class="complexity">
-              <div><dt>Time</dt><dd>Θ(n²·2ⁿ) for the one-value table (Wu et al. 2004): line 3 runs over 2ⁿ sets and lines 4 and 6 over n
-                items each. With labels it is O(n²·2ⁿ·F), where F is the longest label list (a small number on these
-                maps, shown in the results table; the fit above treats it as a constant).</dd></div>
-              <div><dt>Memory</dt><dd>Θ(n·2ⁿ) cells (×F labels), which is why the race stops at 16 items.</dd></div>
-              <div><dt>Optimal?</dt><dd>Yes, always: every possible order is covered by some path through the table.
-                The tests also check it against the Python version route for route.</dd></div>
+              <div><dt>Time</dt><dd>O(n²·2ⁿ·F), F = the longest label list (small in practice)</dd></div>
+              <div><dt>Memory</dt><dd>O(n·2ⁿ·F), which is why the race stops at 16 items</dd></div>
+              <div><dt>Optimal?</dt><dd>Yes, always</dd></div>
             </dl>
           </article>
         </div>
 
         <div class="card prose small">
           <h3>About this page</h3>
-          <p>The algorithms are a TypeScript port of the group's Python implementation (<code>ai-claude/raccoon/</code>).
-            Automated tests check that both versions produce identical routes. Timings are measured in your browser
-            (wall-clock, averaged over repeated runs), so they differ from the Python benchmark numbers. Maps here use a
-            different random number generator than Python, so a seed on this page is not the same map as that seed in
-            <code>python main.py demo</code>.</p>
-          <p>References: B. Y. Wu, Z.-N. Huang and F.-J. Zhan, "Exact algorithms for the minimum latency problem",
-            <em>Information Processing Letters</em> 92(6):303–309, 2004 (the exact DP for the repairman problem) ·
-            R. Roberti and A. Mingozzi, "Dynamic ng-path relaxation for the delivery man problem",
-            <em>Transportation Science</em> 48(3):413–424, 2014 (the same recursion, with dominance rules) ·
-            J. N. Tsitsiklis, "Special cases of traveling salesman and repairman problems with time windows",
-            <em>Networks</em> 22(3):263–282, 1992 (label propagation over time and waiting time) · J. Pei, N. Mladenović,
-            D. Urošević, J. Brimberg and X. Liu, "Solving the traveling repairman problem with profits: A novel variable
-            neighborhood search approach", <em>Information Sciences</em> 507:108–123, 2020 (scores that stop at zero) ·
-            M. Held and R. M. Karp, "A dynamic programming approach to sequencing problems",
-            <em>J. SIAM</em> 10(1):196–210, 1962 · R. Bellman, "Dynamic programming treatment of the travelling salesman
-            problem", <em>J. ACM</em> 9(1):61–63, 1962 · D. J. Rosenkrantz, R. E. Stearns and P. M. Lewis II, "An analysis of several heuristics for the traveling
-            salesman problem", <em>SIAM J. Computing</em> 6(3):563–581, 1977 · W. E. Smith, "Various optimizers for single-stage
-            production", <em>Naval Research Logistics Quarterly</em> 3(1–2):59–66, 1956 (ratio rule) · A. Blum et al., "The minimum
-            latency problem", <em>STOC</em> 1994, 163–171.</p>
+          <p>Both algorithms are written in TypeScript and run in your browser; the algorithms are in
+            <code>demo/src/solutions/</code>. Automated tests check Subset DP against an exhaustive search of every order on
+            small maps, and check that both algorithms keep producing the same routes on a set of reference maps.
+            Timings are wall-clock, averaged over repeated runs. A map is fully determined by its size and seed, so
+            the same seed gives the same map on every computer.</p>
+          <p>Pseudocode, running-time analysis, the correctness proof and full references are in our project
+            report.</p>
         </div>
       </section>
     </main>

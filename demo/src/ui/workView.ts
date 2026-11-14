@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-12,
-//  at the request of George Rule. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of George Rule. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
@@ -16,7 +16,7 @@
  * Both are drawn from a tiny pre-rendered image (one pixel per square) scaled up, so
  * even 65,536 squares cost one drawImage per frame.
  */
-import { popcount } from "../core/subsetDp";
+import { popcount } from "../solutions/subsetDp";
 import type { AlgorithmKey } from "../core/problem";
 import { ALGORITHM_COLORS, COLORS, fitCanvas, SET_SIZE_RAMP } from "./theme";
 

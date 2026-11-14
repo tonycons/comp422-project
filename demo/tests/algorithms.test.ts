@@ -1,15 +1,15 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-12 (Claude): tests for Held-Karp and the scaling study.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /** Correctness checks on the maps the website itself generates. */
 import { describe, expect, it } from "vitest";
 import { generateInstance } from "../src/core/generator";
-import * as greedy from "../src/core/greedy";
-import * as subsetDp from "../src/core/subsetDp";
-import { evaluateRoute } from "../src/core/problem";
+import * as greedy from "../src/solutions/greedy";
+import * as subsetDp from "../src/solutions/subsetDp";
+import { evaluateRoute, type Problem } from "../src/core/problem";
 import { fitGrowth, GROWTH } from "../src/core/scaling";
 
 describe("generator", () => {
@@ -40,9 +40,52 @@ describe("evaluateRoute", () => {
     });
 });
 
+/** Best score over EVERY order of the items (n! of them): the ground truth for small maps. */
+function bestScoreByExhaustiveSearch(inst: Problem): number {
+    const n = inst.items.length;
+    const order = [...Array(n).keys()];
+    let best = -Infinity;
+    const permute = (k: number): void => {           // Heap-style: fix positions 0..k-1, try each rest
+        if (k === n) {
+            best = Math.max(best, evaluateRoute(inst, order, "greedy").totalScore);
+            return;
+        }
+        for (let i = k; i < n; i++) {
+            [order[k], order[i]] = [order[i], order[k]];
+            permute(k + 1);
+            [order[k], order[i]] = [order[i], order[k]];
+        }
+    };
+    permute(0);
+    return best;
+}
+
 describe("Subset DP", () => {
-    // (Optimality itself is proven by the Python tests, which compare Subset DP with an
-    //  exhaustive search, and parity.test.ts checks this port picks the same routes.)
+    it("finds the true optimum: equals an exhaustive search of all n! orders (n = 1..8)", () => {
+        // This is the proof that the table and its dominance rule (subsetDp.ts) are exact.
+        for (let n = 1; n <= 8; n++) {
+            for (let k = 0; k < (n <= 6 ? 12 : 4); k++) {
+                const inst = generateInstance(n, 5000 + 100 * n + k);
+                const { solution, stats } = subsetDp.solve(inst);
+                expect(solution.totalScore).toBeCloseTo(bestScoreByExhaustiveSearch(inst), 6);
+                expect(stats.bestLoss).toBeCloseTo(solution.spoilageLoss, 6);   // the table's own answer agrees
+            }
+        }
+    });
+
+    it("stays optimal when food spoils early (crowded map: label lists longer than 1)", () => {
+        // A slow raccoon makes most food spoil before it is reached, which is the case the
+        // (time, loss) label lists exist for.
+        let longestList = 1;
+        for (let k = 0; k < 12; k++) {
+            const inst = { ...generateInstance(7, 7000 + k), speed: 0.15 };
+            const { solution, stats } = subsetDp.solve(inst);
+            expect(solution.totalScore).toBeCloseTo(bestScoreByExhaustiveSearch(inst), 6);
+            longestList = Math.max(longestList, stats.maxFront);
+        }
+        expect(longestList).toBeGreaterThan(1);       // the test really exercised label lists
+    });
+
     it("is never beaten by any of 300 random orders", () => {
         let state = 12345;   // tiny deterministic LCG so the test never flakes
         const rand = () => (state = (state * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
@@ -75,7 +118,7 @@ describe("Subset DP", () => {
         expect(stats.cells).toBe(11 * 2 ** 10);   // n * 2^(n-1) cells (S, j) with j in S
         expect(stats.cellsBySize.reduce((a, b) => a + b, 0)).toBe(stats.cells);
         for (let s = 1; s <= 11; s++) {
-            expect(stats.cellsBySize[s]).toBe(s * subsetDp.choose(11, s));
+            expect(stats.cellsBySize[s]).toBe(s * choose(11, s));
         }
     });
 
@@ -117,3 +160,12 @@ describe("trendline fit", () => {
         expect(fit.r2).toBeCloseTo(1, 9);
     });
 });
+
+/** Binomial coefficient C(n, s): how many sets of s items there are. */
+function choose(n: number, s: number): number {
+    let r = 1;
+    for (let k = 1; k <= s; k++) {
+        r = (r * (n - s + k)) / k;
+    }
+    return Math.round(r);
+}

@@ -1,15 +1,13 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * Random problem instances (port of raccoon/generator.py).
+ * Random problem instances.
  *
- * Each map is fully determined by (n, seed). The random number generator here
- * (mulberry32) is NOT Python's Mersenne Twister, so seed 48 on this site is a
- * different map from seed 48 in `python main.py demo`. The algorithms are the
- * same; only the maps differ.
+ * Each map is fully determined by (n, seed), using a small seeded random number
+ * generator (mulberry32), so the same seed gives the same map on every computer.
  */
 import * as config from "./config";
 import type { FoodItem, Problem } from "./problem";

@@ -1,11 +1,11 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-12 (Claude): Held-Karp color, set-size ramp for the DP table.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * THE LOOK OF EVERYTHING drawn on a canvas (web copy of raccoon/visuals/theme.py).
+ * THE LOOK OF EVERYTHING drawn on a canvas.
  * Page colors live in style.css; keep the two in sync.
  *
  * Palette checked with a colorblind-safety validator (light surface #fcfcfb):

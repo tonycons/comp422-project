@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-12 (Claude): Greedy vs. Held-Karp race + "How they scale" charts.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
@@ -18,8 +18,8 @@
 import "./style.css";
 import * as config from "./core/config";
 import { MAX_SEED, randomSeed } from "./core/generator";
-import * as greedy from "./core/greedy";
-import * as subsetDp from "./core/subsetDp";
+import * as greedy from "./solutions/greedy";
+import * as subsetDp from "./solutions/subsetDp";
 import { isSpoiledAt, type Solution } from "./core/problem";
 import { makeRace, type Race } from "./core/race";
 import {

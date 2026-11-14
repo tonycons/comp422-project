@@ -1,6 +1,6 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-12 (Claude): the race is now Greedy vs. Held-Karp.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
@@ -8,8 +8,8 @@
  * Set up a race: one map, both algorithms solve it (and we time them).
  */
 import { generateInstance } from "./generator";
-import * as greedy from "./greedy";
-import * as subsetDp from "./subsetDp";
+import * as greedy from "../solutions/greedy";
+import * as subsetDp from "../solutions/subsetDp";
 import type { Problem } from "./problem";
 
 /** Greedy's "thinking lines" are only drawn on maps this small (they'd be a blur above). */

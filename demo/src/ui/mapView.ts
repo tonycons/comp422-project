@@ -1,17 +1,17 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-12 (Claude): Held-Karp planning replay replaces the 2-opt replay.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
- * One algorithm's map, drawn on a <canvas>. Two phases (like the Python race):
+ * One algorithm's map, drawn on a <canvas>. Two phases:
  *   drawPlanning(progress)  - the algorithm computing its route
  *   drawWalking(t)          - the raccoon walking its route, t = seconds since leaving the den
  * Both are pure functions of their argument, so the timeline can be scrubbed freely.
  */
-import type { Decision } from "../core/greedy";
-import type { Snapshot } from "../core/subsetDp";
+import type { Decision } from "../solutions/greedy";
+import type { Snapshot } from "../solutions/subsetDp";
 import { freshnessAt, type AlgorithmKey, type Problem, type Solution } from "../core/problem";
 import { ALGORITHM_COLORS, COLORS, fitCanvas, foodStyle, STALE_BELOW, traceShape } from "./theme";
 
@@ -53,7 +53,7 @@ export class MapView {
         this.ctx = fitCanvas(this.canvas, this.size, this.size);
     }
 
-    // --- coordinates: map meters -> canvas pixels (y points up, like the Python plots)
+    // --- coordinates: map meters -> canvas pixels (y points up)
     private px(x: number): number {
         return this.pad + (x / this.data!.instance.width) * (this.size - 2 * this.pad);
     }

@@ -1,13 +1,12 @@
 // =============================================================================
 //  AI-GENERATED FILE  -  written by Claude (Anthropic AI), 2026-11-03,
-//  at the request of tonycons. See ../../../ai-claude/AI_CONTRIBUTIONS.md for the full log.
+//  at the request of tonycons. See ../../../AI_CONTRIBUTIONS.md for the full log.
 //  Updated 2026-11-03 (Claude): spoiled food is worth 0 calories.
 //  Updated 2026-11-12 (Claude): algorithm keys are now Greedy / Held-Karp.
 //  Human edits: please tag changed lines with   // [EDIT: <your name>]
 // =============================================================================
 /**
  * The problem itself: food, the map, and how a route is scored.
- * TypeScript port of raccoon/problem.py -- see that file for the full write-up.
  *
  *   freshness(t) = 1 - t / shelfLife                 (1 = fresh, 0 = spoiled)
  *   score(t)     = calories * max(0, freshness(t))   (spoiled food is worth 0, never less)
@@ -28,8 +27,9 @@
  * (There the repairman may skip nodes; ours must eat everything, which gives the same
  * best score because spoiled items can be left for last.)
  *
- * NOTE on floating point: every formula below is written in the same order as
- * the Python, so both versions make identical decisions (see tests/parity.test.ts).
+ * NOTE on floating point: do not reorder the arithmetic in these formulas. A different
+ * order can change the last digit and flip a near-tie, and tests/regression.test.ts
+ * checks that the routes on its reference maps stay exactly the same.
  */
 
 export interface FoodType {
@@ -72,7 +72,7 @@ export const scoreAt = (item: FoodItem, t: number): number =>
     item.food.calories * Math.max(0.0, freshnessAt(item, t));
 
 /**
- * Calories lost by eating at time t instead of time 0: w * min(t, shelfLife). Same formula as Python.
+ * Calories lost by eating at time t instead of time 0: w * min(t, shelfLife).
  */
 export const lossAt = (item: FoodItem, t: number): number =>
     item.food.calories * Math.min(1.0, decayRate(item.food) * t);
@@ -95,7 +95,7 @@ export interface Problem {
 export const totalCalories = (inst: Problem): number =>
     inst.items.reduce((sum, it) => sum + it.food.calories, 0);
 
-/** Straight-line distance (Python: math.hypot). */
+/** Straight-line distance. */
 export const distance = (
     ax: number,
     ay: number,
